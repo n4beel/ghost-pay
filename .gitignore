@@ -1,9 +1,12 @@
-# env files — never commit
+# env files — never commit actual values
 frontend/.env.local
 frontend/.env*.local
 .env.local
 .env*.local
 .env
+# but DO track the example templates
+!frontend/.env.example
+!.env.example
 
 # Dependencies
 frontend/node_modules/

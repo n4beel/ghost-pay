@@ -4,43 +4,37 @@ Status legend: `[ ]` todo · `[x]` done · `[-]` skipped · `[~]` in progress
 
 ---
 
-## PHASE 0 — Pre-build Setup (Do before Day 1)
+## PHASE 0 — Pre-build Setup ✅ COMPLETE
 
 ### Accounts & API Keys
-- [ ] Request RPC Fast hackathon plan → https://t.me/+SpMbJTPTakAxNjdi
-- [ ] Create Dune SIM account → https://sim.dune.com → get `SIM_API_KEY`
-- [ ] Create Covalent GoldRush account → https://goldrush.dev → get `COVALENT_API_KEY`
-- [ ] Create Torque account → https://torque.so → get `TORQUE_API_KEY`
-- [ ] Check Umbra devnet access → https://docs.umbraprivacy.com (faucet/devnet token info)
-- [ ] Get PUSD mint address from Palm USD Discord or hackathon resources
-- [ ] Create GitHub repo: `ghost-pay` (public)
-- [ ] Follow @rpcfast on X (required for RPC Fast submission)
-- [ ] Join RPC Fast Telegram: https://t.me/+SpMbJTPTakAxNjdi (required for submission)
+- [x] RPC Fast — Beam app key obtained, Mainnet RPC app key pending (see note below)
+- [x] Dune SIM API key → `DUNE_SIM_API_KEY` set
+- [x] Covalent GoldRush API key → `COVALENT_API_KEY` set
+- [x] Torque API key → `TORQUE_API_KEY` set
+- [x] MagicBlock API URL → `https://payments.magicblock.app`
+- [x] Google AI API key → `GOOGLE_AI_API_KEY` set
+- [x] GitHub repo created → https://github.com/n4beel/ghost-pay
+- [x] Follow @rpcfast on X ✓
+- [x] Join RPC Fast Telegram ✓
+- [x] **PUSD mint address** — `CZzgUBvxaMLwMhVSLgqJn3npmxoTo6nzMNQPAnwtHF3s` (Solana mainnet SPL, 6 decimals, confirmed via palmusd.com/pages/developers.html)
+- [ ] **RPC Fast Mainnet RPC key** — click "Mainnet RPC application" in dashboard to get full key, replace `<MAINNET_RPC_KEY>` in `frontend/.env.local` and `backend/.env`
+
+> **RPC Fast note:** Two separate apps in dashboard:
+> - Beam app (`beam.rpcfast.com`) → Shredstream/Yellowstone gRPC only
+> - Mainnet RPC app (`solana-rpc.rpcfast.com` + `wss://solana-rpc.rpcfast.com`) → standard Solana RPC + WebSocket (used by Umbra SDK and wallet adapter)
 
 ### Project Bootstrap
-- [ ] `npx create-next-app@latest ghost-pay --typescript --tailwind --app --no-src-dir`
-- [ ] Delete default shadcn setup if present
-- [ ] Install core dependencies:
-  ```
-  npm install geist
-  npm install @radix-ui/react-dialog @radix-ui/react-dropdown-menu
-  npm install @radix-ui/react-tooltip @radix-ui/react-select
-  npm install @radix-ui/react-tabs @radix-ui/react-toast
-  npm install @umbra-privacy/sdk @umbra-privacy/web-zk-prover
-  npm install @cloak.dev/sdk
-  npm install @bonfida/spl-name-service
-  npm install @solana/web3.js
-  npm install @solana/wallet-adapter-react @solana/wallet-adapter-react-ui
-  npm install @solana/wallet-adapter-wallets @solana/wallet-adapter-base
-  npm install @covalenthq/client-sdk
-  pnpm add @ika.xyz/sdk   # stretch only
-  ```
-- [ ] Configure `tailwind.config.ts` with ghost-pay design tokens (see DESIGN_BRIEF.md)
-- [ ] Set up `app/globals.css` with CSS variables from DESIGN_BRIEF.md
-- [ ] Set up `app/layout.tsx` with GeistSans + GeistMono fonts
-- [ ] Create `.env.local` from `.env.example`
-- [ ] Create `.env.example` with all required keys listed (no values)
-- [ ] Initial commit: `chore: bootstrap ghost-pay`
+- [x] `frontend/` — Next.js 16 + Tailwind v4 via `create-next-app`
+- [x] `backend/` — NestJS 11 strict via Nest CLI
+- [x] `programs/` — reserved (Anchor not needed yet; uses deployed programs)
+- [x] All SDK packages installed (see `frontend/package.json`)
+- [x] `globals.css` — Tailwind v4 design tokens, radar animation, skeleton shimmer
+- [x] `layout.tsx` — Geist fonts + Ghost Pay metadata
+- [x] `frontend/.env.local` — all keys set (Mainnet RPC key placeholder remaining)
+- [x] `frontend/.env.example` — committed as template
+- [x] `backend/.env` + `backend/.env.example` — all keys set
+- [x] Full directory scaffold — all app routes, components, lib, hooks created
+- [x] Initial commits pushed to GitHub
 
 ---
 
