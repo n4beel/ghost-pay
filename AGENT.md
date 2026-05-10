@@ -115,8 +115,14 @@ ghost-pay/                          ← repo root
 │   │   ├── useUmbra.ts
 │   │   └── useMagicBlock.ts
 │   └── globals.css                 ← Tailwind v4 + design tokens
-├── backend/                        ← reserved for standalone services
-└── programs/                       ← reserved for Solana programs
+├── backend/                        ← NestJS 11 (strict mode)
+│   ├── src/
+│   │   ├── main.ts                 ← listens on PORT (default 3001)
+│   │   └── app.module.ts
+│   ├── .env                        ← actual keys (never commit)
+│   └── .env.example                ← keys template (committed)
+└── programs/                       ← Solana programs (Anchor)
+    └── (empty — no custom programs needed yet; uses Umbra/Cloak deployed programs)
 ```
 
 **Important:** This is Next.js **16** with Tailwind **v4**.
@@ -129,7 +135,8 @@ ghost-pay/                          ← repo root
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | Next.js 14 (App Router) | API routes for server-side SDK calls |
+| Framework | Next.js 16 (App Router) | API routes — or proxy to NestJS backend |
+| Backend | NestJS 11 (strict) | Dune SIM, Covalent, Torque, MagicBlock proxies |
 | Language | TypeScript | Strict mode |
 | Styling | Tailwind CSS | Custom config only, NO shadcn |
 | UI primitives | Radix UI (unstyled) | For a11y: Dialog, Dropdown, Tooltip, Select, Tabs, Toast |
@@ -215,12 +222,28 @@ export const TOKENS = {
 
 ## Coding Conventions
 
+### General
+- **Never generate boilerplate manually** — always use the appropriate CLI
+  - NestJS: `nest g module <name>`, `nest g service <name>`, `nest g controller <name>`
+  - Solana programs: `anchor init`, `anchor build`, `anchor test`
+  - Next.js pages/routes: create files directly (no generator needed)
 - All Umbra amounts use branded `U64` bigint: `createU64(1_000_000n)` — never plain numbers
-- Server-only code lives in `app/api/` routes or `lib/` files imported only by routes
+- Server-only code lives in `app/api/` routes, NestJS services, or `lib/` files imported only by routes
 - Client components: no API keys, no server-only imports
 - Async server components for data fetching where possible (no `useEffect` for initial load)
 - Keep `lib/` files framework-agnostic (no React imports in `lib/`)
 - Use `hooks/` for React-specific state wrapping SDK calls
+
+### Backend (NestJS)
+- Generate all modules/services/controllers with Nest CLI — never write them from scratch
+- Run generators from inside `backend/` directory
+- Use strict TypeScript — no `any`
+- Port: 3001 (frontend Next.js runs on 3000)
+
+### Solana Programs
+- Framework: Anchor (install via AVM if not present)
+- Ghost Pay has no custom programs yet — uses Umbra, Cloak, SNS deployed programs
+- If a program is needed: `cd programs && anchor init <name>` then implement in `programs/<name>/programs/<name>/src/lib.rs`
 
 ---
 
@@ -289,20 +312,22 @@ Phase 6 (Day 6):     [ ] Not started
 Phase 7 (Day 7):     [ ] Not started
 ```
 
-### Phase 0 Completed So Far
+### Phase 0 — COMPLETE
 - [x] GitHub repo created: https://github.com/n4beel/ghost-pay
 - [x] DOCUMENTATION/ folder with all planning docs
-- [x] frontend/ bootstrapped: Next.js 16 + Tailwind v4
-- [x] All npm packages installed (see frontend/package.json)
-- [x] globals.css with design tokens + animations
-- [x] layout.tsx with metadata + Geist fonts
-- [x] .env.example created
-- [x] .env.local with DUNE_SIM_API_KEY, COVALENT_API_KEY, RPC_FAST_API_KEY
-- [x] Full directory scaffold: app routes, components, lib, hooks
-- [x] backend/ and programs/ directories created
+- [x] frontend/ — Next.js 16 + Tailwind v4, all SDK packages installed
+- [x] backend/ — NestJS 11, strict mode, scaffolded via Nest CLI
+- [x] programs/ — reserved (no custom programs needed yet)
+- [x] All env files populated: frontend/.env.local, backend/.env
+- [x] RPC Fast endpoint: https://beam.rpcfast.com
+- [x] MagicBlock API URL: https://payments.magicblock.app
+- [x] Torque, Dune SIM, Covalent, Google AI keys all set
+- [x] Initial git commit pushed
+- [ ] PUSD mint address — pending (email hello@palmusd.com)
+- [ ] RPC Fast WS endpoint — assumed wss://beam.rpcfast.com, verify with RPC Fast team
 
-### Phase 0 Pending (user action required)
-- [ ] RPC Fast endpoint URL — message https://t.me/+SpMbJTPTakAxNjdi, they reply with your HTTP + WS endpoints
-- [ ] Torque API key — sign up at https://torque.so
-- [ ] PUSD mint address — email hello@palmusd.com or check Palm USD Discord
-- [ ] MagicBlock API URL — check https://docs.magicblock.gg for PER API base URL
+### Coding Rules Added by User
+- Never generate boilerplate manually — always use CLI tools
+- Backend: Nest CLI only (`nest g module`, `nest g service`, `nest g controller`)
+- Solana programs: Anchor framework (install AVM + Anchor if needed)
+- Frontend: Next.js App Router conventions only
