@@ -7,7 +7,7 @@ Status legend: `[ ]` todo · `[x]` done · `[-]` skipped · `[~]` in progress
 ## PHASE 0 — Pre-build Setup ✅ COMPLETE
 
 ### Accounts & API Keys
-- [x] RPC Fast — Beam app key obtained, Mainnet RPC app key pending (see note below)
+- [x] RPC Fast — Beam app key obtained, Mainnet RPC app key obtained
 - [x] Dune SIM API key → `DUNE_SIM_API_KEY` set
 - [x] Covalent GoldRush API key → `COVALENT_API_KEY` set
 - [x] Torque API key → `TORQUE_API_KEY` set
@@ -17,11 +17,7 @@ Status legend: `[ ]` todo · `[x]` done · `[-]` skipped · `[~]` in progress
 - [x] Follow @rpcfast on X ✓
 - [x] Join RPC Fast Telegram ✓
 - [x] **PUSD mint address** — `CZzgUBvxaMLwMhVSLgqJn3npmxoTo6nzMNQPAnwtHF3s` (Solana mainnet SPL, 6 decimals, confirmed via palmusd.com/pages/developers.html)
-- [ ] **RPC Fast Mainnet RPC key** — click "Mainnet RPC application" in dashboard to get full key, replace `<MAINNET_RPC_KEY>` in `frontend/.env.local` and `backend/.env`
-
-> **RPC Fast note:** Two separate apps in dashboard:
-> - Beam app (`beam.rpcfast.com`) → Shredstream/Yellowstone gRPC only
-> - Mainnet RPC app (`solana-rpc.rpcfast.com` + `wss://solana-rpc.rpcfast.com`) → standard Solana RPC + WebSocket (used by Umbra SDK and wallet adapter)
+- [x] **RPC Fast Mainnet RPC key** — set in `frontend/.env.local` and `backend/.env`
 
 ### Project Bootstrap
 - [x] `frontend/` — Next.js 16 + Tailwind v4 via `create-next-app`
@@ -30,7 +26,7 @@ Status legend: `[ ]` todo · `[x]` done · `[-]` skipped · `[~]` in progress
 - [x] All SDK packages installed (see `frontend/package.json`)
 - [x] `globals.css` — Tailwind v4 design tokens, radar animation, skeleton shimmer
 - [x] `layout.tsx` — Geist fonts + Ghost Pay metadata
-- [x] `frontend/.env.local` — all keys set (Mainnet RPC key placeholder remaining)
+- [x] `frontend/.env.local` — all keys set
 - [x] `frontend/.env.example` — committed as template
 - [x] `backend/.env` + `backend/.env.example` — all keys set
 - [x] Full directory scaffold — all app routes, components, lib, hooks created
@@ -38,337 +34,207 @@ Status legend: `[ ]` todo · `[x]` done · `[-]` skipped · `[~]` in progress
 
 ---
 
-## PHASE 1 — Foundation (Day 1, May 6)
+## PHASE 1 — Foundation ✅ COMPLETE
+
+### Infrastructure
+- [x] Backend port changed to 4000 (was conflicting with Next.js on 3000)
+- [x] Tailwind v4 CSS layer bug fixed — `* { margin: 0; padding: 0 }` moved to `@layer base` so spacing utilities work
+- [x] Hydration error fixed — `ConnectButton` now uses mounted guard (wallet detection is client-only)
+- [x] TypeScript target set to ES2022 (BigInt literal support)
 
 ### Wallet Integration
-- [ ] Create `components/providers/WalletProvider.tsx` — wrap app with `@solana/wallet-adapter-react`
-- [ ] Support wallets: Phantom, Solflare, Backpack
-- [ ] Create `components/ui/ConnectButton.tsx` — custom styled (no wallet-adapter default CSS)
-- [ ] Show truncated address + `.sol` name when connected (reverse SNS lookup)
-- [ ] Show wallet in sidebar with disconnect option
+- [x] `components/providers/WalletProvider.tsx` — wrap app with `@solana/wallet-adapter-react`
+- [x] Auto-detect standard wallets (Phantom, Solflare, Backpack)
+- [x] `components/ui/ConnectButton.tsx` — custom styled, SNS reverse lookup, disconnect dropdown
+- [x] Show truncated address + `.sol` name when connected
+- [x] Wallet in sidebar with disconnect option, mounted guard for hydration
 
 ### Umbra Client Setup
-- [ ] Create `lib/umbra/client.ts` — `getUmbraClient()` factory with RPC Fast endpoint
-- [ ] Create `lib/umbra/relayer.ts` — `getUmbraRelayer()` pointing to official relayer
-- [ ] Create `lib/umbra/prover.ts` — ZK prover initialization
-- [ ] Create `lib/umbra/registration.ts` — `registerUser()` wrapper (idempotent 3-step)
-- [ ] Create `hooks/useUmbra.ts` — React hook exposing client, registration state
+- [x] `lib/umbra/client.ts` — `initUmbraClient()` factory with RPC Fast endpoint
+- [x] `lib/umbra/prover.ts` — two separate ZK provers (create UTXO + claim UTXO)
+- [x] `lib/umbra/registration.ts` — `registerUser()` + `isUserRegistered()` + localStorage cache
+- [x] `hooks/useUmbra.ts` — React hook exposing client, registration state machine
 
 ### Umbra Registration Flow
-- [ ] On wallet connect → check if user is registered
-- [ ] If not → show registration modal with step indicator (1/3, 2/3, 3/3)
-- [ ] Handle registration errors gracefully (retry button)
-- [ ] Persist registration state to localStorage (avoid re-checking on every load)
+- [x] On wallet connect → check if user is registered (with localStorage cache)
+- [x] If not → show registration banner with one-click register button
+- [x] Handle registration errors gracefully (error state shown)
+- [x] Persist registration state to localStorage
 
-### Shield / Unshield
-- [ ] Create `lib/umbra/shield.ts` — `shieldTokens(mint, amount)` wrapper
-- [ ] Create `lib/umbra/unshield.ts` — `unshieldTokens(mint, amount)` wrapper
-- [ ] Create `components/ShieldModal.tsx` — token picker + amount input + confirm
-- [ ] Create `components/UnshieldModal.tsx` — amount input + destination address
-- [ ] Wire Shield/Unshield buttons to dashboard
+### Private Send / Receive / Shield / Unshield
+- [x] `lib/umbra/send.ts` — `sendPrivate()` ZK UTXO creation
+- [x] `lib/umbra/receive.ts` — `scanAndClaimUtxos()` UTXO scanner + claimer
+- [x] `lib/umbra/shield.ts` — `shieldTokens(mint, amount)` wrapper
+- [x] `lib/umbra/unshield.ts` — `unshieldTokens(mint, amount)` wrapper
+- [x] `lib/umbra/compliance.ts` — stubs (full X25519 key exchange in Phase 3)
 
-### RPC Fast
-- [ ] Set `NEXT_PUBLIC_RPC_ENDPOINT` in `.env.local` to RPC Fast URL
-- [ ] Verify all SDK connections use this endpoint
+### SNS
+- [x] `lib/sns.ts` — `resolveSnsDomain()` + `reverseResolveSns()` wrappers
 
 ### Layout & Navigation
-- [ ] Create `components/layout/Sidebar.tsx` — navigation links, wallet display
-- [ ] Create `components/layout/PageShell.tsx` — sidebar + main content wrapper
-- [ ] Create `app/dashboard/page.tsx` — placeholder with balance cards
-- [ ] Create `app/send/page.tsx` — placeholder
-- [ ] Create `app/receive/page.tsx` — placeholder
-- [ ] Create `app/payroll/page.tsx` — placeholder
-- [ ] Create `app/history/page.tsx` — placeholder
-- [ ] Create `app/compliance/page.tsx` — placeholder
-- [ ] Create `app/rewards/page.tsx` — placeholder
+- [x] `components/layout/Sidebar.tsx` — navigation links, wallet display, inline styles
+- [x] `components/layout/PageShell.tsx` — `h-screen` layout, scrollable main
+- [x] All pages created: dashboard, send, receive, payroll, history, compliance, rewards
 
-### Base UI Components (no shadcn)
-- [ ] `components/ui/Button.tsx` — primary + ghost variants (see DESIGN_BRIEF.md)
-- [ ] `components/ui/Input.tsx` — base input, error state, mono variant
-- [ ] `components/ui/Badge.tsx` — status pill (private, pending, confirmed)
-- [ ] `components/ui/Panel.tsx` — surface card with border, no border-radius
-- [ ] `components/ui/Spinner.tsx` — NOT a spinner: radar-sweep animation for ZK proofs
-- [ ] `components/ui/RedactedValue.tsx` — `████████` with reveal-on-click (signature UI)
-- [ ] `components/ui/Toast.tsx` — bottom-right toast via Radix
+### Base UI Components
+- [x] `components/ui/Button.tsx` — primary / ghost / danger, inline styles
+- [x] `components/ui/Input.tsx` — label, error, hint, mono, suffix
+- [x] `components/ui/Badge.tsx` — private / pending / confirmed / error / default
+- [x] `components/ui/Panel.tsx` — surface card, elevated variant, noPadding
+- [x] `components/ui/Spinner.tsx` — radar-sweep animation for ZK proofs
+- [x] `components/ui/RedactedValue.tsx` — `████████` blur reveal-on-click
+- [x] `components/ui/Toast.tsx` — bottom-right toast via Radix
 
-**Day 1 done when:** Connect Phantom → Umbra registration completes → Shield 0.1 devnet USDC → encrypted balance shows in dashboard (redacted by default)
+### API Routes (proxy layer)
+- [x] `app/api/portfolio/route.ts` — Dune SIM proxy (balances + activities)
+- [x] `app/api/pricing/route.ts` — Covalent GoldRush proxy (USD pricing)
+- [x] `app/api/torque/route.ts` — Torque leaderboard + event push proxy
+- [x] `app/api/magicblock/[...route]/route.ts` — MagicBlock PER proxy
 
----
+### Lib Files
+- [x] `lib/tokens.ts` — USDC, USDT, wSOL, PUSD token registry
 
-## PHASE 2 — Private Send + Identity (Day 2, May 7)
-
-### SNS Integration
-- [ ] Create `lib/sns.ts` — `resolveDomain(name)`, `reverseLookup(pubkey)` wrappers
-- [ ] Add error handling for unregistered domains
-- [ ] Cache resolved addresses in memory for session duration
-
-### Send Page
-- [ ] Create `components/send/RecipientInput.tsx`
-  - [ ] Accepts `.sol` name or raw address
-  - [ ] Debounce 300ms then call `resolveDomain()`
-  - [ ] Show green checkmark + resolved address on success
-  - [ ] Show "Domain not found" error on failure
-  - [ ] Mono font for address display
-- [ ] Create `components/send/AmountInput.tsx`
-  - [ ] Token selector dropdown (USDC, PUSD, wSOL)
-  - [ ] Show available private balance for selected token
-  - [ ] "Max" button
-- [ ] Create `components/send/RouteSelector.tsx`
-  - [ ] Option A: Umbra ZK Mixer (fully unlinkable)
-  - [ ] Option B: MagicBlock PER (Enterprise TEE)
-  - [ ] Visual difference: privacy badge colors differ per route
-- [ ] Wire up `/send` page with all components
-
-### Umbra Private Send
-- [ ] Create `lib/umbra/send.ts` — `sendPrivate(recipient, mint, amount)` wrapper
-  - [ ] Uses `getPublicBalanceToReceiverClaimableUtxoCreatorFunction`
-  - [ ] Accepts resolved PublicKey from SNS
-- [ ] Create `lib/umbra/receive.ts`
-  - [ ] `scanForUtxos(treeIndex, startIndex)` — calls UTXO scanner
-  - [ ] `claimUtxo(utxo)` — claims to encrypted balance
-- [ ] Create ZK proof loading state (radar animation, "Generating proof..." text)
-- [ ] Show transaction signature on success + link to Solana explorer
-
-### Receive Page
-- [ ] Display user's Umbra receiver address (for direct UTXO sends)
-- [ ] QR code of receiver address (use `qrcode.react`)
-- [ ] Display user's `.sol` name prominently if they have one
-- [ ] "Share payment link" button — `ghost-pay.vercel.app/pay/[address]`
-- [ ] Create `/pay/[address]/page.tsx` — public page where anyone can send to this address
-
-### Pending Claims
-- [ ] Create `components/dashboard/PendingClaims.tsx`
-  - [ ] Poll Umbra indexer every 30s for new UTXOs
-  - [ ] Show count badge: "3 pending claims"
-  - [ ] One-click "Claim All" button
-  - [ ] Individual claim buttons per UTXO
-- [ ] Auto-trigger scan on page load
-
-**Day 2 done when:** Wallet A sends 0.1 USDC to `wallet-b.sol` privately → Wallet B dashboard shows pending claim → Wallet B claims → encrypted balance increases
+> **Build verified:** 0 TypeScript errors, 14 routes compiled, spacing + layout confirmed working
 
 ---
 
-## PHASE 3 — Portfolio + Compliance (Day 3, May 8)
+## PHASE 2 — Live Data + Real Flows ✅ COMPLETE
 
-### Dune SIM Integration
-- [ ] Create `app/api/portfolio/route.ts`
-  - [ ] Fetch Solana token balances: `GET /v1/solana/balances/{wallet}`
-  - [ ] Fetch activity feed: `GET /v1/solana/activities/{wallet}?limit=20`
-  - [ ] Return merged JSON response
-- [ ] Cache response for 30s (use Next.js `revalidate`)
+### Dashboard — Real Data
+- [x] `lib/umbra/balance.ts` — `queryEncryptedBalances()` using `getEncryptedBalanceQuerierFunction`
+- [x] `hooks/useEncryptedBalance.ts` — React hook wrapping the balance querier with loading/refresh
+- [x] `hooks/usePortfolio.ts` — fetches Dune SIM balances + Covalent pricing, merges USD values
+- [x] Dashboard wired: private balance card shows real encrypted balance (redacted by default)
+- [x] Dashboard wired: public balance card shows Dune SIM token balances + USD totals
+- [x] `components/dashboard/PortfolioBar.tsx` — pure CSS horizontal bar chart by token allocation
+- [x] Activity feed on dashboard — last 5 txs from Dune SIM with type labels
 
-### Covalent GoldRush Integration
-- [ ] Create `app/api/pricing/route.ts`
-  - [ ] `client.BalanceService.getTokenBalancesForWalletAddress("solana-mainnet", wallet)`
-  - [ ] Extract USD values per token
-  - [ ] Return total portfolio USD value
+### Shield / Unshield Modals
+- [x] `components/ShieldModal.tsx` — token picker + amount + ZK proof spinner + success toast
+- [x] `components/UnshieldModal.tsx` — token picker + amount + MAX button + ZK proof spinner
+- [x] Both modals wired to Shield / Unshield buttons on dashboard, refresh balance on success
 
-### Dashboard — Full Build
-- [ ] Create `components/dashboard/PrivateBalanceCard.tsx`
-  - [ ] Shows encrypted balance (redacted by default)
-  - [ ] Reveal button → decrypt using Umbra encrypted balance querier
-  - [ ] Per-token breakdown (USDC, PUSD, wSOL)
-- [ ] Create `components/dashboard/PublicBalanceCard.tsx`
-  - [ ] Data from Dune SIM
-  - [ ] USD value from Covalent
-- [ ] Create `components/dashboard/PortfolioBar.tsx`
-  - [ ] Horizontal bar chart (pure CSS, no chart library)
-  - [ ] Shows token allocation by USD value
-- [ ] Create `components/dashboard/ActivityFeed.tsx`
-  - [ ] Last 10 transactions from Dune SIM activities endpoint
-  - [ ] Private txs shown as "Private Transfer [REDACTED]"
-  - [ ] Public txs shown with amounts
+### Pay Link Page
+- [x] `app/pay/[address]/page.tsx` — public send-to page
+- [x] Resolves SNS name if passed, shows avatar initial + display name
+- [x] Full send form pre-filled with recipient, no redirect needed
+- [x] Shows ConnectButton if not connected; shows "register first" if not Umbra registered
+
+### Claim All
+- [x] "Claim All" button on dashboard triggers `scanAndClaimUtxos` + refreshes encrypted balance
 
 ### History Page
-- [ ] Create `app/history/page.tsx`
-  - [ ] Full activity list (Dune SIM, paginated)
-  - [ ] Filter: All / Private / Public
-  - [ ] Private entries show redacted amounts by default with reveal
-
-### Compliance Page
-- [ ] Create `lib/umbra/compliance.ts`
-  - [ ] `issueComplianceGrant(grantee, scope)` — calls Umbra grant issuer
-  - [ ] `generateViewingKey()` — derives and returns scoped viewing key string
-  - [ ] `revokeGrant(grantee)` — revocation
-- [ ] Create `app/compliance/page.tsx`
-  - [ ] Generate viewing key button → shows key as copyable mono string
-  - [ ] Scope selector: Full history / Yearly / Monthly / Daily
-  - [ ] "Share with auditor" — copies formatted key + instructions
-  - [ ] Active grants list with revoke buttons
-  - [ ] Explainer: "Your auditor can decrypt only the scope you grant"
-
-**Day 3 done when:** Dashboard shows real Dune SIM balance data + USD values from Covalent + private balance card with reveal + compliance page generates a viewing key
+- [x] Rewritten to use `usePortfolio` hook (shared data, no duplicate fetch)
 
 ---
 
-## PHASE 4 — Cloak Payroll + MagicBlock PER (Day 4, May 9)
+## PHASE 3 — Compliance + Cloak Payroll (Day 3, May 8)
 
-### Cloak — Payroll Feature
-- [ ] Create `lib/cloak/client.ts` — connection + config setup
-- [ ] Create `lib/cloak/payroll.ts`
-  - [ ] `batchSend(recipients: {address, amount, mint}[])` wrapper
-  - [ ] Uses `generateUtxoKeypair`, `createZeroUtxo`, `createUtxo`, `transact`
-  - [ ] Pre-resolves all `.sol` names via SNS before calling Cloak
-- [ ] Create `app/payroll/page.tsx`
-  - [ ] CSV drag-and-drop upload zone (no library — use native File API)
-  - [ ] Parse CSV: columns `name, wallet_or_sol_name, amount, token`
-  - [ ] Preview table: show all recipients before sending
-  - [ ] SNS resolution status per row (resolving... / resolved / not found)
-  - [ ] Total amount summary
-  - [ ] "Send Payroll" button → Cloak batch transact
-  - [ ] Success screen: list all recipients with tx signatures
-- [ ] Handle Cloak mainnet-only constraint: show clear note in UI
+### Compliance Page (Full)
+- [ ] `lib/umbra/compliance.ts` — implement `issueComplianceGrant()` with X25519 key exchange
+- [ ] Scope selector: Full / Yearly / Monthly / Daily / Mint
+- [ ] Active grants list with revoke buttons
+- [ ] "Copy viewing key" — formatted mono string for auditor
 
-### MagicBlock PER — Enterprise Route
-- [ ] Create `lib/magicblock/client.ts`
-  - [ ] `getChallenge()` — GET /v1/spl/challenge
-  - [ ] `login(challenge, signature, publicKey)` — POST /v1/spl/login → returns token
-  - [ ] `getPrivateBalance(token, mint)` — GET /v1/spl/private-balance
-  - [ ] `privateTransfer(token, recipient, mint, amount)` — POST /v1/spl/transfer
-  - [ ] `deposit(token, mint, amount)` — POST /v1/spl/deposit
-  - [ ] `withdraw(token, mint, amount)` — POST /v1/spl/withdraw
-- [ ] Create `app/api/magicblock/[...route]/route.ts`
-  - [ ] Proxy all MagicBlock calls server-side (bearer token never hits client)
-  - [ ] Auth session stored in HTTP-only cookie
-- [ ] Create `hooks/useMagicBlock.ts` — auth state, token management
-- [ ] Wire "MagicBlock PER" route option in `/send` page
-  - [ ] On selection → trigger auth flow (sign challenge) if not already authed
-  - [ ] Show TEE badge: "Hardware-secured · Intel TDX"
-  - [ ] On send → POST /api/magicblock/transfer
+### Cloak — Payroll
+- [ ] `lib/cloak/client.ts` — connection + config
+- [ ] `lib/cloak/payroll.ts` — `batchSend(recipients[])` wrapper
+- [ ] Payroll page: CSV drag-and-drop → parse → preview table → SNS resolve per row → batch send
+- [ ] Success screen with tx signatures
 
-**Day 4 done when:** CSV with 2 recipients → Cloak batch send executes on mainnet. MagicBlock PER route works in `/send` page.
+**Phase 3 done when:** Payroll CSV → Cloak batch send executes. Compliance viewing key generated.
 
 ---
 
-## PHASE 5 — Torque + PUSD + Ika (Day 5, May 10)
+## PHASE 4 — MagicBlock PER + Torque + Ika (Day 4, May 9)
 
-### Torque — Growth Mechanics
-- [ ] Create `lib/torque/events.ts`
-  - [ ] `trackEvent(userWallet, eventName, metadata)` — POST to Torque API
-  - [ ] Events to fire:
-    - `private_payment_sent` (on every Umbra/Cloak send)
-    - `shield_completed` (on every shield)
-    - `payroll_executed` (on every Cloak batch)
-    - `claim_completed` (on every UTXO claim)
-- [ ] Add event calls to all send/shield/claim flows
-- [ ] Set up Torque campaign in dashboard:
-  - [ ] Leaderboard: "Top private senders this week"
-  - [ ] Metric: `private_payment_sent` event count
-- [ ] Create `app/api/torque/leaderboard/route.ts` — fetch leaderboard from Torque API
-- [ ] Create `app/rewards/page.tsx`
-  - [ ] Leaderboard table (rank, .sol name or truncated address, count)
-  - [ ] User's own rank highlighted
-  - [ ] Referral link: `ghost-pay.vercel.app/?ref=[wallet]`
-  - [ ] "Copy referral link" button
+### MagicBlock PER
+- [ ] `lib/magicblock/client.ts` — challenge/login/balance/transfer/deposit/withdraw
+- [ ] `hooks/useMagicBlock.ts` — auth state, session cookie via API proxy
+- [ ] Wire MagicBlock route in `/send` — sign challenge on selection, show TEE badge
 
-### PUSD — Palm USD Support
-- [ ] Add PUSD mint to `lib/tokens.ts` token registry
-- [ ] Add PUSD to Umbra shield flow token selector
-- [ ] Add PUSD to send flow token selector
-- [ ] Show PUSD balance in dashboard
-- [ ] Note mainnet-only in UI if devnet not available
+### Torque — Events
+- [ ] `lib/torque/events.ts` — `trackEvent(wallet, eventName, metadata)` POST wrapper
+- [ ] Fire events: `private_payment_sent`, `shield_completed`, `payroll_executed`, `claim_completed`
+- [ ] Wire into all send/shield/claim flows
 
-### Ika MPC — Cross-Chain (Stretch)
+### Ika MPC
 - [ ] Attempt `pnpm add @ika.xyz/sdk` — check if installable
-- [ ] Read Ika docs at https://docs.ika.xyz for Solana pre-alpha API
-- [ ] If accessible:
-  - [ ] Create `lib/ika/client.ts` — dWallet creation
-  - [ ] Create UI: "Cross-Chain Wallet" section in dashboard
-  - [ ] Create dWallet → show cross-chain addresses (BTC, ETH, SOL)
-- [ ] If blocked:
-  - [ ] Add placeholder UI: "Cross-chain transfers powered by Ika — Coming soon"
-  - [ ] Note Ika integration in README regardless (shows intent for Encrypt & Ika track)
+- [ ] If accessible: `lib/ika/client.ts` — dWallet creation, cross-chain addresses UI
+- [ ] If blocked: placeholder UI with Ika branding + note in README
 
-**Day 5 done when:** Payment fires Torque event. PUSD appears in token selectors. Ika attempted.
+**Phase 4 done when:** MagicBlock PER route works in send. Torque events fire. Ika attempted.
 
 ---
 
-## PHASE 6 — Polish + Demo Prep (Day 6, May 11)
+## PHASE 5 — Polish + Error Handling (Day 5, May 10)
 
 ### Error Handling
-- [ ] Umbra: ZK proof failure → retry button + error toast
-- [ ] Umbra: Insufficient balance → clear message
-- [ ] SNS: Domain not found → inline error
-- [ ] MagicBlock: Auth expired → re-trigger login silently
-- [ ] RPC errors → "Network issue, please try again" toast
-- [ ] Cloak: Mainnet tx failure → show error + link to explorer
+- [ ] ZK proof failure → retry button + error toast
+- [ ] Insufficient balance → clear message
+- [ ] SNS domain not found → inline error (already partially done)
+- [ ] MagicBlock auth expired → silent re-login
+- [ ] RPC errors → "Network issue" toast
+- [ ] Cloak mainnet tx failure → show error + explorer link
 
 ### Loading States
-- [ ] ZK proof: radar animation + "Generating zero-knowledge proof..." (2-8s)
-- [ ] UTXO scan: subtle pulse on "Checking for payments..."
-- [ ] Portfolio data: skeleton screens (CSS shimmer, no library)
-- [ ] SNS resolution: spinner next to input during lookup
+- [ ] ZK proof: radar animation (already exists), "Generating zero-knowledge proof..." text
+- [ ] UTXO scan: subtle pulse
+- [ ] Portfolio data: skeleton screens (CSS shimmer, already exists)
 
-### Landing Page (`app/page.tsx`)
-- [ ] Hero: "Pay anyone. Reveal nothing."
-- [ ] 3 feature rows: Private Payments / Payroll / Compliance
-- [ ] "Launch App" CTA → /dashboard
-- [ ] Tagline about PUSD support ("First private app for Shariah-compliant stablecoins")
-- [ ] No animations, no blobs — static, confident
+### Landing Page Polish
+- [ ] Add "First private payments app supporting PUSD (Shariah-compliant)" tagline
+- [ ] Add SDK logos row (Umbra, Cloak, MagicBlock, RPC Fast)
 
 ### Mobile Responsiveness
-- [ ] Sidebar collapses to bottom nav on mobile
-- [ ] All forms usable on 390px width
+- [ ] Sidebar collapses to bottom nav on mobile (≤768px)
+- [ ] All forms usable at 390px width
 - [ ] Dashboard cards stack vertically on mobile
 
-### README.md
-- [ ] Write complete README using template from SUBMISSION_CHECKLIST.md
-- [ ] Include all SDK integrations table
-- [ ] Include program IDs
-- [ ] Include build + run instructions
-- [ ] Include screenshots (take after polish)
-
-### Demo Video (max 5 minutes)
-Script:
-1. Open app → landing page (30s)
-2. Connect Phantom wallet (20s)
-3. Umbra registration (30s) — show the 3 steps
-4. Shield 1 USDC → show encrypted balance card (30s)
-5. Send to `.sol` name → show ZK proof radar animation → success (45s)
-6. Switch wallet → claim incoming UTXO (30s)
-7. Show portfolio dashboard with Dune SIM data (20s)
-8. Show payroll page: upload CSV → batch send (45s)
-9. Show compliance page: generate viewing key (20s)
-10. Show rewards leaderboard (20s)
-11. Show MagicBlock enterprise route (15s)
-Total: ~5 minutes
-
-**Day 6 done when:** App is demo-ready with no crashes on golden path. README complete. Video recorded.
+**Phase 5 done when:** App is demo-ready with no crashes on golden path.
 
 ---
 
-## PHASE 7 — Submissions (Day 7, May 12)
+## PHASE 6 — README + Demo Video + Submissions (Days 6–7, May 11–12)
+
+### README.md
+- [ ] Complete README with SDK integrations table, build instructions, screenshots
+- [ ] Highlight each track integration explicitly
+
+### Demo Video (max 5 minutes)
+- [ ] Landing page (30s)
+- [ ] Connect Phantom (20s)
+- [ ] Umbra registration (30s)
+- [ ] Shield 1 USDC → encrypted balance card (30s)
+- [ ] Send to `.sol` → ZK proof radar → success (45s)
+- [ ] Claim incoming UTXO (30s)
+- [ ] Portfolio dashboard + Dune SIM data (20s)
+- [ ] CSV payroll → Cloak batch send (45s)
+- [ ] Compliance viewing key (20s)
+- [ ] Rewards leaderboard (20s)
+- [ ] MagicBlock enterprise route (15s)
 
 ### Deploy
 - [ ] Push final code to GitHub
 - [ ] Deploy to Vercel: `vercel --prod`
-- [ ] Test deployed URL end-to-end (Phantom on mainnet if applicable)
-- [ ] Verify all API keys work in production (Vercel env vars set)
+- [ ] Test deployed URL end-to-end
 
-### Colosseum Submission
-- [ ] Create project on Colosseum Frontier portal
-- [ ] Fill all required fields
-- [ ] Save Colosseum project URL
-
-### Superteam Earn Submissions (in prize order)
-- [ ] **Encrypt & Ika** — $15,000 → Submit by 11:59 UTC
-- [ ] **Umbra** — $10,000 → Submit by 11:59 UTC
-- [ ] **Palm USD** — $10,000 → Submit by 11:59 UTC
-- [ ] **100xDevs** — $10,000 → Submit by 11:59 UTC
-- [ ] **RPC Fast** — $10,000 credits → Submit by 11:59 UTC
-- [ ] **theMiracle** — $10,000 → Write benefit design + submit
-- [ ] **Dune** — $6,000 → Submit by 11:59 UTC
-- [ ] **SNS** — $5,000 → Submit by 11:59 UTC
-- [ ] **KAST Pakistan** — $5,000 → Submit by 11:59 UTC
-- [ ] **MagicBlock** — $5,000 → Submit by 11:59 UTC
-- [ ] **Cloak** — $5,010 → Submit by 11:59 UTC
-- [ ] **Torque** — $3,000 → Submit by 11:59 UTC
-- [ ] **Covalent** — $3,000 → Submit by 11:59 UTC
-
-### Social
-- [ ] Post to X (use template from SUBMISSION_CHECKLIST.md)
-- [ ] Tag all relevant sponsors in the post
-- [ ] Post to any relevant Telegram groups
+### Colosseum + Superteam Submissions (May 12, before 11:59 UTC)
+- [ ] Colosseum Frontier project page created + filled
+- [ ] **Encrypt & Ika** — $15,000
+- [ ] **Umbra** — $10,000
+- [ ] **Palm USD** — $10,000
+- [ ] **100xDevs** — $10,000
+- [ ] **RPC Fast** — $10,000 credits
+- [ ] **theMiracle** — $10,000 (write wallet placement benefit doc)
+- [ ] **Dune** — $6,000
+- [ ] **SNS** — $5,000
+- [ ] **KAST Pakistan** — $5,000
+- [ ] **MagicBlock** — $5,000
+- [ ] **Cloak** — $5,010
+- [ ] **Torque** — $3,000
+- [ ] **Covalent** — $3,000
+- [ ] X post tagging all sponsors
 
 ---
 
@@ -377,4 +243,4 @@ Total: ~5 minutes
 - [ ] Keep GitHub commits clean and frequent (judges look at commit history)
 - [ ] Every evening: push code + update this TASKS.md with `[x]` completions
 - [ ] If blocked on an SDK: open issue on its GitHub, ask in their Telegram/Discord
-- [ ] Do not add new features after Day 5 — polish only
+- [ ] Do not add new features after Phase 5 — polish only
