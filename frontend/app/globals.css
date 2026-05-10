@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-ghost-base: #0A0A0A;
+  --color-ghost-surface: #111111;
+  --color-ghost-elevated: #181818;
+  --color-ghost-overlay: #1F1F1F;
+
+  /* Borders */
+  --color-ghost-border-subtle: #1E1E1E;
+  --color-ghost-border: #2A2A2A;
+  --color-ghost-border-strong: #383838;
+
+  /* Text */
+  --color-ghost-text: #EBEBEB;
+  --color-ghost-text-secondary: #888888;
+  --color-ghost-text-tertiary: #444444;
+
+  /* Accent — Ghost Cyan */
+  --color-ghost-accent: #00E5CC;
+  --color-ghost-accent-dim: #00E5CC1A;
+
+  /* Status */
+  --color-ghost-success: #1DB954;
+  --color-ghost-warning: #F5A623;
+  --color-ghost-danger: #E53E3E;
+  --color-ghost-privacy: #7B5EA7;
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Border radius — sharp by default */
+  --radius: 2px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-pill: 999px;
+}
+
+/* CSS variables for use in arbitrary values */
+:root {
+  --bg-base: #0A0A0A;
+  --bg-surface: #111111;
+  --bg-elevated: #181818;
+  --bg-overlay: #1F1F1F;
+  --border-subtle: #1E1E1E;
+  --border-default: #2A2A2A;
+  --border-strong: #383838;
+  --text-primary: #EBEBEB;
+  --text-secondary: #888888;
+  --text-tertiary: #444444;
+  --accent: #00E5CC;
+  --accent-dim: #00E5CC1A;
+  --success: #1DB954;
+  --warning: #F5A623;
+  --danger: #E53E3E;
+  --privacy: #7B5EA7;
+  --privacy-dim: #7B5EA71A;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 2px;
+}
+
+/* Mono class helper */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: 0;
+}
+
+/* Redacted value — block characters */
+.redacted {
+  filter: blur(8px);
+  user-select: none;
+  transition: filter 1.2s ease-out;
+}
+.redacted.revealed {
+  filter: blur(0);
+}
+
+/* Radar sweep animation for ZK proof loading */
+@keyframes radar-sweep {
+  0%   { transform: rotate(0deg); opacity: 1; }
+  100% { transform: rotate(360deg); opacity: 1; }
+}
+@keyframes radar-ping {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  50%  { transform: scale(1.1); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
+}
+
+.radar-sweep {
+  animation: radar-sweep 1.4s linear infinite;
+  transform-origin: center;
+}
+.radar-ping {
+  animation: radar-ping 1.4s ease-in-out infinite;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 2px;
+}

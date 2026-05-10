@@ -1,0 +1,19 @@
+# env files — never commit
+frontend/.env.local
+frontend/.env*.local
+.env.local
+.env*.local
+.env
+
+# Dependencies
+frontend/node_modules/
+node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Misc
+.DS_Store
+*.log
+.vercel
