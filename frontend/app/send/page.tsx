@@ -14,6 +14,7 @@ import { SUPPORTED_TOKENS } from "@/lib/tokens";
 import { sendPrivate } from "@/lib/umbra/send";
 import { TOKENS } from "@/lib/tokens";
 import { useToast } from "@/components/ui/Toast";
+import NotConnectedView from "@/components/ui/NotConnectedView";
 
 type Route = "umbra" | "magicblock";
 type SendStage = "idle" | "proving" | "broadcasting" | "done" | "error";
@@ -78,9 +79,7 @@ export default function SendPage() {
   return (
     <PageShell title="Send" description="Private payment — amounts hidden, sender anonymous">
       {!connected ? (
-        <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-          Connect your wallet to send.
-        </p>
+        <NotConnectedView message="Connect your wallet to send privately." />
       ) : (
         <div style={{ maxWidth: "480px" }}>
           <Panel>

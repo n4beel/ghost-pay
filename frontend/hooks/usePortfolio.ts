@@ -48,33 +48,25 @@ export function usePortfolio(): Portfolio {
 
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    Promise.all([
-      fetch(`/api/portfolio?wallet=${wallet}`).then((r) => r.json()),
-      fetch(`/api/pricing?wallet=${wallet}`).then((r) => r.json()),
-    ])
-      .then(([portfolio, pricing]) => {
+    fetch(`/api/portfolio?wallet=${wallet}`)
+      .then((r) => r.json())
+      .then((portfolio) => {
         if (cancelled) return;
-
-        // Dune SIM balances
+        // Dune SIM SVM balances — response shape: { balances: [...], balances_count: N }
+        // Each item: { address, balance (formatted string), value_usd, symbol, decimals, ... }
         const duneBalances: Record<string, unknown>[] =
-          portfolio.balances?.balances ?? portfolio.balances?.data ?? [];
-
-        // Covalent items for USD values
-        const covalentItems: Record<string, unknown>[] = pricing.data?.items ?? [];
+          portfolio.balances?.balances ??
+          portfolio.balances?.data ??
+          (Array.isArray(portfolio.balances) ? portfolio.balances : []);
 
         const tokens: PublicTokenBalance[] = duneBalances
-          .filter((b) => parseFloat(String(b.amount ?? b.balance ?? "0")) > 0)
+          .filter((b) => parseFloat(String(b.balance ?? b.amount ?? "0")) > 0)
           .map((b) => {
-            const mint = String(b.token_address ?? b.mint ?? "");
+            const mint = String(b.address ?? b.token_address ?? b.mint ?? "");
             const symbol = String(b.symbol ?? b.token_symbol ?? "???");
-            const balance = parseFloat(String(b.amount ?? b.balance ?? "0"));
-            const cov = covalentItems.find(
-              (c) =>
-                String(c.contract_address ?? "").toLowerCase() === mint.toLowerCase(),
-            );
-            const usdValue = cov
-              ? parseFloat(String(cov.quote ?? "0"))
-              : parseFloat(String(b.value_usd ?? b.usd_value ?? "0"));
+            // Dune SVM `balance` is already human-readable (e.g. "3.676548")
+            const balance = parseFloat(String(b.balance ?? b.amount ?? "0"));
+            const usdValue = parseFloat(String(b.value_usd ?? b.usd_value ?? "0"));
             return {
               symbol,
               mint,
@@ -86,22 +78,26 @@ export function usePortfolio(): Portfolio {
 
         const totalUsd = tokens.reduce((sum, t) => sum + t.usdValue, 0);
 
-        // Dune SIM activities
+        // Dune SIM SVM transactions — response shape: { transactions: [...] }
+        // Each item: { block_time (microseconds!), address, chain, raw_transaction, ... }
         const rawActivities: Record<string, unknown>[] =
-          portfolio.activities?.activities ?? portfolio.activities?.data ?? [];
+          portfolio.activities?.transactions ??
+          portfolio.activities?.activities ??
+          portfolio.activities?.data ??
+          (Array.isArray(portfolio.activities) ? portfolio.activities : []);
 
-        const activities: ActivityItem[] = rawActivities.slice(0, 20).map((a) => ({
-          type: deriveActivityType(String(a.type ?? a.activity_type ?? "")),
-          amount: null,
-          token: String(a.symbol ?? a.token_symbol ?? "SOL"),
-          timestamp:
-            typeof a.block_time === "number"
-              ? a.block_time * 1000
-              : typeof a.timestamp === "number"
-              ? a.timestamp
-              : Date.now(),
-          txHash: String(a.transaction_hash ?? a.tx_hash ?? ""),
-        }));
+        const activities: ActivityItem[] = rawActivities.slice(0, 20).map((a) => {
+          // block_time is in microseconds in Dune SVM
+          const rawTime = typeof a.block_time === "number" ? a.block_time : 0;
+          const timestamp = rawTime > 1e12 ? Math.floor(rawTime / 1000) : rawTime * 1000;
+          return {
+            type: "other" as ActivityItem["type"],
+            amount: null,
+            token: "SOL",
+            timestamp: timestamp || Date.now(),
+            txHash: String(a.tx_hash ?? a.transaction_hash ?? ""),
+          };
+        });
 
         setState({ tokens, totalUsd, activities, loading: false, error: null });
       })

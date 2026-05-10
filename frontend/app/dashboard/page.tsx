@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import Panel from "@/components/ui/Panel";
@@ -17,6 +17,7 @@ import { useEncryptedBalance } from "@/hooks/useEncryptedBalance";
 import { formatBalance } from "@/lib/umbra/balance";
 import { scanAndClaimUtxos } from "@/lib/umbra/receive";
 import { useToast } from "@/components/ui/Toast";
+import NotConnectedView from "@/components/ui/NotConnectedView";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -102,39 +103,41 @@ export default function DashboardPage() {
   const encryptedBalance = useEncryptedBalance(client, isReady);
   const { toast } = useToast();
 
+  const [claiming, setClaiming] = useState(false);
+
   const handleClaimAll = useCallback(async () => {
-    if (!client) return;
+    if (!client || claiming) return;
+    setClaiming(true);
     try {
       const { claimed } = await scanAndClaimUtxos(client);
-      toast(
-        claimed > 0 ? "success" : "info",
-        claimed > 0 ? `Claimed ${claimed} payment${claimed > 1 ? "s" : ""}` : "No pending payments",
-      );
-      if (claimed > 0) encryptedBalance.refresh();
+      if (claimed > 0) {
+        toast("success", `${claimed} payment${claimed > 1 ? "s" : ""} claimed — balance updating`);
+        encryptedBalance.refresh();
+      } else {
+        toast("info", "No pending payments");
+      }
     } catch (err) {
       toast("error", "Claim failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setClaiming(false);
     }
-  }, [client, toast, encryptedBalance]);
+  }, [client, claiming, toast, encryptedBalance]);
 
   // Total private balance in USD (no oracle — show raw token amounts)
+  const sharedBalances = encryptedBalance.balances.filter((b) => !b.mxeMode && !b.callbackPending && b.balance > 0);
+  const mxeBalances = encryptedBalance.balances.filter((b) => b.mxeMode);
+  const pendingCallbackBalances = encryptedBalance.balances.filter((b) => b.callbackPending);
   const totalPrivateDisplay =
-    encryptedBalance.balances.length === 0
+    sharedBalances.length === 0
       ? null
-      : encryptedBalance.balances
+      : sharedBalances
           .map((b) => `${formatBalance(b.balance, b.decimals)} ${b.symbol}`)
           .join(" + ");
 
   if (!connected) {
     return (
       <PageShell title="Dashboard">
-        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center">
-          <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-            Connect your wallet to access Ghost Pay.
-          </p>
-          <p className="text-[11px] uppercase tracking-[0.04em]" style={{ color: "var(--text-tertiary)" }}>
-            Phantom · Solflare · Backpack
-          </p>
-        </div>
+        <NotConnectedView message="Connect your wallet to access Ghost Pay." />
       </PageShell>
     );
   }
@@ -168,9 +171,47 @@ export default function DashboardPage() {
             </p>
           )}
 
-          <p className="text-[11px] mt-1 mb-4" style={{ color: "var(--text-tertiary)" }}>
+          <p className="text-[11px] mt-1 mb-3" style={{ color: "var(--text-tertiary)" }}>
             {isReady ? "Click value to reveal" : "Connect & register to view"}
           </p>
+
+          {pendingCallbackBalances.length > 0 && (
+            <div
+              className="flex items-center gap-3 px-3 py-2 mb-3 text-[12px]"
+              style={{ border: "1px solid var(--accent)", background: "var(--accent-dim)", color: "var(--text-secondary)" }}
+            >
+              <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <span>
+                {pendingCallbackBalances.map((b) => b.symbol).join(", ")} awaiting Arcium callback — balance will appear automatically
+              </span>
+            </div>
+          )}
+
+          {mxeBalances.length > 0 && (
+            <div
+              className="flex flex-col gap-1 px-3 py-2 mb-3 text-[12px]"
+              style={{ border: "1px solid var(--warning)", background: "var(--accent-dim)" }}
+            >
+              <div className="flex items-center justify-between gap-3" style={{ color: "var(--text-secondary)" }}>
+                <span>
+                  {mxeBalances.map((b) => b.symbol).join(", ")} balance pending conversion to shared mode
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={encryptedBalance.convertMxe}
+                  disabled={encryptedBalance.converting}
+                >
+                  {encryptedBalance.converting ? "Converting…" : "Convert"}
+                </Button>
+              </div>
+              {encryptedBalance.convertError && (
+                <p className="text-[11px]" style={{ color: "var(--danger)" }}>
+                  {encryptedBalance.convertError}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 flex-wrap">
             <Link href="/send">
@@ -197,8 +238,13 @@ export default function DashboardPage() {
               </>
             )}
             {isReady && (
-              <Button variant="ghost" size="sm" onClick={handleClaimAll}>
-                Claim All
+              <Button variant="ghost" size="sm" onClick={handleClaimAll} disabled={claiming}>
+                {claiming ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                    Claiming…
+                  </span>
+                ) : "Claim All"}
               </Button>
             )}
           </div>

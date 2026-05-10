@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/Toast";
 import { shieldTokens } from "@/lib/umbra/shield";
 import { TOKENS, SUPPORTED_TOKENS, type TokenSymbol } from "@/lib/tokens";
 import type { UmbraClient } from "@/lib/umbra/client";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 interface ShieldModalProps {
   client: UmbraClient;
@@ -16,12 +18,30 @@ interface ShieldModalProps {
   trigger: React.ReactNode;
 }
 
+const MIN_SOL_FOR_FEES = 0.005; // ~5000 lamports * some buffer
+
 export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalProps) {
   const { toast } = useToast();
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<TokenSymbol>("USDC");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+
+  // Fetch SOL balance when dialog opens
+  const handleOpenChange = useCallback(async (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen && publicKey) {
+      try {
+        const lamports = await connection.getBalance(publicKey);
+        setSolBalance(lamports / LAMPORTS_PER_SOL);
+      } catch {
+        setSolBalance(null);
+      }
+    }
+  }, [connection, publicKey]);
 
   const handleShield = useCallback(async () => {
     const parsed = parseFloat(amount);
@@ -37,14 +57,18 @@ export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalP
       setOpen(false);
       onSuccess?.();
     } catch (err) {
-      toast("error", "Shield failed", err instanceof Error ? err.message : "Unknown error");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("[ShieldModal] shield error:", err);
+      toast("error", "Shield failed", msg);
     } finally {
       setLoading(false);
     }
   }, [client, token, amount, toast, onSuccess]);
 
+  const lowSol = solBalance !== null && solBalance < MIN_SOL_FOR_FEES;
+
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay
@@ -105,6 +129,16 @@ export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalP
               mono
             />
 
+            {/* Low SOL warning */}
+            {lowSol && (
+              <div
+                className="px-3 py-2 text-[12px]"
+                style={{ background: "var(--danger-dim, rgba(239,68,68,0.1))", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "2px" }}
+              >
+                Your SOL balance ({solBalance?.toFixed(4)}) is very low. You may not have enough to cover transaction fees (~0.005 SOL needed).
+              </div>
+            )}
+
             {/* Privacy note */}
             <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
               ZK proof will be generated on-device. This requires a wallet signature.
@@ -113,7 +147,7 @@ export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalP
             {/* Actions */}
             {loading ? (
               <div className="flex justify-center py-3">
-                <Spinner label="Generating ZK proof..." />
+                <Spinner label="Shielding tokens..." />
               </div>
             ) : (
               <div className="flex gap-3">

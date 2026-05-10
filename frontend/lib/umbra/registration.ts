@@ -1,8 +1,12 @@
 import { getUserRegistrationFunction, getUserAccountQuerierFunction } from "@umbra-privacy/sdk";
 import type { UmbraClient } from "./client";
+import { getRegistrationProver } from "./prover";
 
 export async function registerUser(client: UmbraClient): Promise<void> {
-  const register = getUserRegistrationFunction({ client });
+  const register = getUserRegistrationFunction(
+    { client },
+    { zkProver: getRegistrationProver() },
+  );
   await register({ confidential: true, anonymous: true });
 }
 
@@ -10,7 +14,9 @@ export async function isUserRegistered(client: UmbraClient): Promise<boolean> {
   try {
     const querier = getUserAccountQuerierFunction({ client });
     const result = await querier(client.signer.address);
-    return result !== null && result !== undefined;
+    // Must check state === "exists" — non_existent still returns a non-null object
+    // Must also verify X25519 key is registered — required for shared-mode and MXE conversion
+    return result?.state === "exists" && result.data.isUserAccountX25519KeyRegistered === true;
   } catch {
     return false;
   }

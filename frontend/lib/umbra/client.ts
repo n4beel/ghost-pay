@@ -20,5 +20,6 @@ export async function initUmbraClient(signer: UmbraSigner): Promise<UmbraClient>
     rpcUrl: RPC_URL,
     rpcSubscriptionsUrl: RPC_WS_URL,
     indexerApiEndpoint: INDEXER_URL,
+    deferMasterSeedSignature: true,
   });
 }

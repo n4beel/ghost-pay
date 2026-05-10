@@ -2,9 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { createSignerFromWalletAccount } from "@umbra-privacy/sdk";
-import type { StandardWalletAdapter } from "@solana/wallet-adapter-base";
 import { initUmbraClient } from "@/lib/umbra/client";
+import { createUmbraSignerFromAdapter } from "@/lib/umbra/signer";
 import type { UmbraClient } from "@/lib/umbra/client";
 import {
   registerUser,
@@ -35,16 +34,11 @@ const UmbraContext = createContext<UmbraContextValue>({
   isReady: false,
 });
 
-function isStandardAdapter(adapter: unknown): adapter is StandardWalletAdapter {
-  return !!(adapter as StandardWalletAdapter)?.standard;
-}
-
 export function UmbraProvider({ children }: { children: React.ReactNode }) {
   const { wallet, connected, publicKey } = useWallet();
   const [client, setClient] = useState<UmbraClient | null>(null);
   const [registrationState, setRegistrationState] = useState<RegistrationState>("unknown");
 
-  // Track which public key the client was initialized for so we don't re-init on re-renders
   const initializedForKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -56,27 +50,16 @@ export function UmbraProvider({ children }: { children: React.ReactNode }) {
     }
 
     const currentKey = publicKey.toBase58();
-
-    // Already initialized for this wallet — don't re-sign
     if (initializedForKey.current === currentKey && client !== null) return;
 
-    const adapter = wallet.adapter;
-    if (!isStandardAdapter(adapter)) {
-      setRegistrationState("error");
-      return;
-    }
-
-    const stdWallet = adapter.wallet;
-    const account = stdWallet.accounts[0];
-    if (!account) {
-      setRegistrationState("error");
-      return;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adapter = wallet.adapter as any;
+    if (!adapter || typeof adapter.signTransaction !== "function") return;
 
     let cancelled = false;
 
     async function init() {
-      const signer = createSignerFromWalletAccount(stdWallet, account);
+      const signer = createUmbraSignerFromAdapter(adapter, publicKey?.toBase58());
       const c = await initUmbraClient(signer);
       if (cancelled) return;
 
@@ -84,8 +67,11 @@ export function UmbraProvider({ children }: { children: React.ReactNode }) {
       setClient(c);
 
       const cached = getCachedRegistration(currentKey);
-      if (cached !== null) {
-        setRegistrationState(cached ? "registered" : "unregistered");
+      // Show unregistered from cache immediately so the Register button appears fast.
+      // Always re-verify on-chain — the old check was broken (null check on a never-null result),
+      // so cached "registered" values may be stale.
+      if (cached === false) {
+        setRegistrationState("unregistered");
         return;
       }
 
@@ -96,7 +82,8 @@ export function UmbraProvider({ children }: { children: React.ReactNode }) {
       setRegistrationState(registered ? "registered" : "unregistered");
     }
 
-    init().catch(() => {
+    init().catch((err) => {
+      console.error("[UmbraProvider] init error:", err);
       if (!cancelled) setRegistrationState("error");
     });
 

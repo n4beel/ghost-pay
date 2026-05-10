@@ -5,6 +5,7 @@ import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useWallet } from "@solana/wallet-adapter-react";
+import NotConnectedView from "@/components/ui/NotConnectedView";
 
 export default function PayrollPage() {
   const { connected } = useWallet();
@@ -15,9 +16,7 @@ export default function PayrollPage() {
       description="Batch private disbursements via Cloak — one transaction, multiple private recipients"
     >
       {!connected ? (
-        <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-          Connect your wallet to use payroll.
-        </p>
+        <NotConnectedView message="Connect your wallet to use payroll." />
       ) : (
         <div className="flex flex-col gap-4" style={{ maxWidth: "640px" }}>
           <Panel>

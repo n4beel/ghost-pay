@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { queryEncryptedBalances, type EncryptedTokenBalance } from "@/lib/umbra/balance";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { queryEncryptedBalances, convertMxeBalancesToShared, type EncryptedTokenBalance } from "@/lib/umbra/balance";
 import type { UmbraClient } from "@/lib/umbra/client";
+
+const CALLBACK_POLL_INTERVAL_MS = 8000;
 
 interface EncryptedBalanceState {
   balances: EncryptedTokenBalance[];
-  totalUsd: number; // placeholder — Umbra doesn't provide USD; caller layers pricing
+  totalUsd: number;
   loading: boolean;
-  error: string | null;
+  converting: boolean;
+  error: string | null;       // balance load error
+  convertError: string | null; // conversion error (doesn't blank out balance display)
 }
 
 export function useEncryptedBalance(client: UmbraClient | null, isReady: boolean) {
@@ -16,15 +20,27 @@ export function useEncryptedBalance(client: UmbraClient | null, isReady: boolean
     balances: [],
     totalUsd: 0,
     loading: false,
+    converting: false,
     error: null,
+    convertError: null,
   });
 
-  const refresh = useCallback(async () => {
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearTimeout(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const refresh = useCallback(async (silent = false) => {
     if (!client || !isReady) return;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const balances = await queryEncryptedBalances(client);
-      setState({ balances, totalUsd: 0, loading: false, error: null });
+      setState((s) => ({ ...s, balances, totalUsd: 0, loading: false }));
+      return balances;
     } catch (err) {
       setState((s) => ({
         ...s,
@@ -34,13 +50,61 @@ export function useEncryptedBalance(client: UmbraClient | null, isReady: boolean
     }
   }, [client, isReady]);
 
+  // Poll every 8 s while any token has callbackPending, stop when all resolve
+  const startPolling = useCallback((clientRef: UmbraClient) => {
+    stopPolling();
+    const tick = async () => {
+      const querier = async () => {
+        try {
+          const balances = await queryEncryptedBalances(clientRef);
+          setState((s) => ({ ...s, balances, totalUsd: 0, loading: false }));
+          if (balances.some((b) => b.callbackPending)) {
+            pollRef.current = setTimeout(tick, CALLBACK_POLL_INTERVAL_MS);
+          } else {
+            pollRef.current = null;
+          }
+        } catch {
+          // keep polling on transient errors
+          pollRef.current = setTimeout(tick, CALLBACK_POLL_INTERVAL_MS);
+        }
+      };
+      await querier();
+    };
+    pollRef.current = setTimeout(tick, CALLBACK_POLL_INTERVAL_MS);
+  }, [stopPolling]);
+
+  const convertMxe = useCallback(async () => {
+    if (!client || !isReady) return;
+    setState((s) => ({ ...s, converting: true, convertError: null }));
+    try {
+      await convertMxeBalancesToShared(client);
+      const balances = await queryEncryptedBalances(client);
+      setState((s) => ({ ...s, balances, totalUsd: 0, converting: false, convertError: null }));
+      if (balances.some((b) => b.callbackPending)) {
+        startPolling(client);
+      }
+    } catch (err) {
+      console.error("[convertMxe]", err);
+      setState((s) => ({
+        ...s,
+        converting: false,
+        convertError: err instanceof Error ? err.message : "Conversion failed",
+      }));
+    }
+  }, [client, isReady, startPolling]);
+
   useEffect(() => {
     if (!isReady) {
-      setState({ balances: [], totalUsd: 0, loading: false, error: null });
+      stopPolling();
+      setState({ balances: [], totalUsd: 0, loading: false, converting: false, error: null, convertError: null });
       return;
     }
     refresh();
-  }, [isReady, refresh]);
+    return stopPolling;
+  }, [isReady, refresh, stopPolling]);
 
-  return { ...state, refresh };
+  const hasMxeBalances = state.balances.some((b) => b.mxeMode);
+  const hasCallbackPending = state.balances.some((b) => b.callbackPending);
+
+  return { ...state, hasMxeBalances, hasCallbackPending, refresh: () => refresh(), convertMxe };
 }

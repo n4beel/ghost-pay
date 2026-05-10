@@ -319,7 +319,7 @@ Phase 7 (Day 7):     [ ] Not started
 - [x] backend/ — NestJS 11, strict mode, scaffolded via Nest CLI
 - [x] programs/ — reserved (no custom programs needed yet)
 - [x] All env files populated: frontend/.env.local, backend/.env
-- [x] RPC Fast endpoint: https://beam.rpcfast.com
+- [x] RPC Fast endpoint: https://solana-rpc.rpcfast.com
 - [x] MagicBlock API URL: https://payments.magicblock.app
 - [x] Torque, Dune SIM, Covalent, Google AI keys all set
 - [x] Initial git commit pushed

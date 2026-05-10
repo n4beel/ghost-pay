@@ -11,6 +11,7 @@ import { useUmbra } from "@/hooks/useUmbra";
 import { scanAndClaimUtxos } from "@/lib/umbra/receive";
 import { reverseResolveSns } from "@/lib/sns";
 import { useToast } from "@/components/ui/Toast";
+import NotConnectedView from "@/components/ui/NotConnectedView";
 
 export default function ReceivePage() {
   const { connected, publicKey } = useWallet();
@@ -49,9 +50,7 @@ export default function ReceivePage() {
   return (
     <PageShell title="Receive" description="Share your payment address or scan for pending payments">
       {!connected ? (
-        <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-          Connect your wallet to receive.
-        </p>
+        <NotConnectedView message="Connect your wallet to receive payments." />
       ) : (
         <div className="flex flex-col gap-4" style={{ maxWidth: "480px" }}>
           {/* Address card */}

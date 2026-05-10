@@ -30,5 +30,5 @@ export async function reverseResolveSns(address: string): Promise<string | null>
 }
 
 export function isSolDomain(input: string): boolean {
-  return input.trim().endsWith(".sol") || /^[a-zA-Z0-9-]+$/.test(input.trim());
+  return input.trim().endsWith(".sol");
 }

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ConnectButton from "@/components/ui/ConnectButton";
+import { useUmbra } from "@/hooks/useUmbra";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const NAV_LINKS = [
   { href: "/dashboard",   label: "Dashboard" },
@@ -13,6 +15,38 @@ const NAV_LINKS = [
   { href: "/compliance",  label: "Compliance" },
   { href: "/rewards",     label: "Rewards" },
 ];
+
+function UmbraStatusBadge() {
+  const { connected } = useWallet();
+  const { registrationState } = useUmbra();
+
+  if (!connected || registrationState === "unknown") return null;
+
+  const map: Record<string, { label: string; color: string }> = {
+    checking:     { label: "Checking...",  color: "var(--warning, #f59e0b)" },
+    unregistered: { label: "Not set up",   color: "var(--warning, #f59e0b)" },
+    registering:  { label: "Registering", color: "var(--accent)" },
+    registered:   { label: "Umbra ✓",     color: "var(--success, #10b981)" },
+    error:        { label: "Umbra error",  color: "var(--danger, #ef4444)" },
+  };
+
+  const entry = map[registrationState];
+  if (!entry) return null;
+
+  return (
+    <div
+      className="mx-3 mb-2 px-3 py-1.5 text-[11px] font-medium"
+      style={{
+        border: `1px solid ${entry.color}`,
+        color: entry.color,
+        borderRadius: "2px",
+        opacity: 0.85,
+      }}
+    >
+      {entry.label}
+    </div>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -59,12 +93,13 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Wallet */}
+      {/* Umbra status + Wallet */}
       <div
-        className="px-4 py-4 flex-shrink-0"
-        style={{ borderTop: "1px solid var(--border-subtle)" }}
+        className="flex flex-col pb-4 flex-shrink-0"
+        style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "12px" }}
       >
-        <div className="w-full">
+        <UmbraStatusBadge />
+        <div className="px-4">
           <ConnectButton />
         </div>
       </div>

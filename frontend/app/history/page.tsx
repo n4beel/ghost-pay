@@ -5,6 +5,7 @@ import Panel from "@/components/ui/Panel";
 import Badge from "@/components/ui/Badge";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { usePortfolio, type ActivityItem } from "@/hooks/usePortfolio";
+import NotConnectedView from "@/components/ui/NotConnectedView";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -37,9 +38,7 @@ export default function HistoryPage() {
   return (
     <PageShell title="History" description="Transaction history via Dune SIM">
       {!connected ? (
-        <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-          Connect your wallet to view history.
-        </p>
+        <NotConnectedView message="Connect your wallet to view transaction history." />
       ) : (
         <div style={{ maxWidth: "640px" }}>
           <Panel noPadding>
