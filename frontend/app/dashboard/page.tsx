@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import Panel from "@/components/ui/Panel";
@@ -18,6 +18,7 @@ import { formatBalance } from "@/lib/umbra/balance";
 import { scanAndClaimUtxos } from "@/lib/umbra/receive";
 import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
+import { trackEvent } from "@/lib/torque/events";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -97,28 +98,34 @@ function RegistrationBanner({
 }
 
 export default function DashboardPage() {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { client, registrationState, register, isReady } = useUmbra();
   const portfolio = usePortfolio();
   const encryptedBalance = useEncryptedBalance(client, isReady);
   const { toast } = useToast();
 
   const [claiming, setClaiming] = useState(false);
+  const [claimElapsed, setClaimElapsed] = useState(0);
+  const claimTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleClaimAll = useCallback(async () => {
     if (!client || claiming) return;
     setClaiming(true);
+    setClaimElapsed(0);
+    claimTimerRef.current = setInterval(() => setClaimElapsed((e) => e + 1), 1000);
     try {
       const { claimed } = await scanAndClaimUtxos(client);
       if (claimed > 0) {
         toast("success", `${claimed} payment${claimed > 1 ? "s" : ""} claimed — balance updating`);
         encryptedBalance.refresh();
+        if (publicKey) trackEvent(publicKey.toBase58(), "claim_completed", { amount: claimed });
       } else {
         toast("info", "No pending payments");
       }
     } catch (err) {
       toast("error", "Claim failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
+      if (claimTimerRef.current) clearInterval(claimTimerRef.current);
       setClaiming(false);
     }
   }, [client, claiming, toast, encryptedBalance]);
@@ -242,7 +249,7 @@ export default function DashboardPage() {
                 {claiming ? (
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-                    Claiming…
+                    Scanning… {claimElapsed}s
                   </span>
                 ) : "Claim All"}
               </Button>

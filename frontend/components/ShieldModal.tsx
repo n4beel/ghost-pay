@@ -11,6 +11,7 @@ import { TOKENS, SUPPORTED_TOKENS, type TokenSymbol } from "@/lib/tokens";
 import type { UmbraClient } from "@/lib/umbra/client";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { trackEvent } from "@/lib/torque/events";
 
 interface ShieldModalProps {
   client: UmbraClient;
@@ -53,6 +54,7 @@ export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalP
     try {
       await shieldTokens(client, tokenInfo.mint, lamports);
       toast("success", "Shielded", `${amount} ${token} moved to encrypted balance`);
+      if (publicKey) trackEvent(publicKey.toBase58(), "shield_completed", { token, amount: parsed });
       setAmount("");
       setOpen(false);
       onSuccess?.();

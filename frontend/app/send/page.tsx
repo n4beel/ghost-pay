@@ -15,12 +15,14 @@ import { sendPrivate } from "@/lib/umbra/send";
 import { TOKENS } from "@/lib/tokens";
 import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
+import { magicBlockTransfer } from "@/lib/magicblock/client";
+import { trackEvent } from "@/lib/torque/events";
 
 type Route = "umbra" | "magicblock";
 type SendStage = "idle" | "proving" | "broadcasting" | "done" | "error";
 
 export default function SendPage() {
-  const { connected } = useWallet();
+  const { connected, publicKey, signMessage } = useWallet();
   const { client, isReady } = useUmbra();
   const { toast } = useToast();
 
@@ -48,15 +50,42 @@ export default function SendPage() {
   }, [recipient]);
 
   const handleSend = useCallback(async () => {
-    if (!client || !resolvedAddress || !amount) return;
+    if (!resolvedAddress || !amount) return;
     const tokenInfo = TOKENS[token];
-    const amountLamports = BigInt(Math.round(parseFloat(amount) * 10 ** tokenInfo.decimals));
+    const parsed = parseFloat(amount);
+
     setStage("proving");
     try {
       setStage("broadcasting");
-      await sendPrivate(client, resolvedAddress, tokenInfo.mint, amountLamports);
+
+      if (route === "magicblock") {
+        if (!publicKey || !signMessage) {
+          throw new Error("Wallet must support signMessage for MagicBlock route");
+        }
+        await magicBlockTransfer(
+          publicKey.toBase58(),
+          resolvedAddress,
+          tokenInfo.mint,
+          parsed,
+          signMessage,
+        );
+      } else {
+        if (!client) throw new Error("Umbra client not ready");
+        const amountLamports = BigInt(Math.round(parsed * 10 ** tokenInfo.decimals));
+        await sendPrivate(client, resolvedAddress, tokenInfo.mint, amountLamports);
+      }
+
       setStage("done");
       toast("success", "Payment sent", `${amount} ${token} sent privately`);
+
+      if (publicKey) {
+        trackEvent(publicKey.toBase58(), "private_payment_sent", {
+          route,
+          token,
+          amount: parsed,
+        });
+      }
+
       setAmount("");
       setRecipient("");
       setResolvedAddress(null);
@@ -66,7 +95,13 @@ export default function SendPage() {
       toast("error", "Send failed", err instanceof Error ? err.message : "Unknown error");
       setTimeout(() => setStage("idle"), 3000);
     }
-  }, [client, resolvedAddress, amount, token, toast]);
+  }, [client, resolvedAddress, amount, token, route, toast, publicKey, signMessage]);
+
+  const canSend =
+    resolvedAddress &&
+    amount &&
+    parseFloat(amount) > 0 &&
+    (route === "umbra" ? isReady : !!publicKey);
 
   const stageLabel: Record<SendStage, string> = {
     idle: "",
@@ -193,7 +228,7 @@ export default function SendPage() {
                 </div>
               ) : (
                 <Button
-                  disabled={!isReady || !resolvedAddress || !amount || parseFloat(amount) <= 0}
+                  disabled={!canSend}
                   onClick={handleSend}
                 >
                   Send Privately

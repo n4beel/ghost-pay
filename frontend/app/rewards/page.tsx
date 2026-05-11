@@ -6,6 +6,9 @@ import Panel from "@/components/ui/Panel";
 import Badge from "@/components/ui/Badge";
 import { useWallet } from "@solana/wallet-adapter-react";
 
+const PROJECT_ID = "cmozo5pxf0266k01hc7zscq54";
+const CLAIM_URL = `https://server.torque.so/claim?projectId=${PROJECT_ID}&wallet=`;
+
 interface LeaderboardEntry {
   rank: number;
   address: string;
@@ -43,9 +46,14 @@ export default function RewardsPage() {
               className="px-5 py-3 flex items-center justify-between"
               style={{ borderBottom: "1px solid var(--border-subtle)" }}
             >
-              <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
-                Weekly Leaderboard
-              </p>
+              <div>
+                <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
+                  Weekly Leaderboard
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+                  Epoch 1 · May 12 – May 19, 2026
+                </p>
+              </div>
               <Badge variant="default">Torque</Badge>
             </div>
 
@@ -66,7 +74,7 @@ export default function RewardsPage() {
             ) : leaderboard.length === 0 ? (
               <div className="flex flex-col items-center py-12 gap-2">
                 <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                  No leaderboard data yet
+                  Results available after epoch ends May 19
                 </p>
                 <p className="text-[12px]" style={{ color: "var(--text-tertiary)" }}>
                   Send private payments to earn a spot
@@ -110,6 +118,17 @@ export default function RewardsPage() {
                     <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
                       payments
                     </span>
+                    {isCurrentUser && entry.rank <= 3 && (
+                      <a
+                        href={CLAIM_URL + entry.address}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] px-2 py-1"
+                        style={{ background: "var(--accent)", color: "var(--bg-base)", borderRadius: "2px" }}
+                      >
+                        Claim
+                      </a>
+                    )}
                   </div>
                 );
               })

@@ -51,7 +51,12 @@ export async function scanAndClaimUtxos(client: UmbraClient) {
       claimed++;
     } catch (e) {
       const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
-      const isAlreadySpent = msg.includes("already") || msg.includes("processed");
+      // 409 Conflict = relayer already has this claim; treat as already spent.
+      const isAlreadySpent =
+        msg.includes("already") ||
+        msg.includes("processed") ||
+        msg.includes("conflict") ||
+        msg.includes("409");
       if (!isAlreadySpent) throw e;
     }
   }

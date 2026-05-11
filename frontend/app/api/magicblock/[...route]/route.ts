@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const MB_BASE = process.env.MAGICBLOCK_API_URL ?? "https://payments.magicblock.app";
 
 async function proxy(request: NextRequest, path: string) {
-  const url = `${MB_BASE}/${path}`;
+  const qs = request.nextUrl.search;
+  const url = `${MB_BASE}/${path}${qs}`;
   const body = request.method !== "GET" ? await request.text() : undefined;
   const authHeader = request.headers.get("authorization");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import PageShell from "@/components/layout/PageShell";
 import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
@@ -21,6 +21,8 @@ export default function ReceivePage() {
   const [solName, setSolName] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [claimedCount, setClaimedCount] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!publicKey) { setSolName(null); return; }
@@ -30,6 +32,8 @@ export default function ReceivePage() {
   const handleScan = async () => {
     if (!client) return;
     setScanning(true);
+    setElapsed(0);
+    elapsedRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     try {
       const { claimed } = await scanAndClaimUtxos(client);
       setClaimedCount(claimed);
@@ -40,6 +44,7 @@ export default function ReceivePage() {
     } catch (err) {
       toast("error", "Scan failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
+      if (elapsedRef.current) clearInterval(elapsedRef.current);
       setScanning(false);
     }
   };
@@ -110,8 +115,11 @@ export default function ReceivePage() {
             </p>
 
             {scanning ? (
-              <div className="flex flex-col items-center py-6">
-                <Spinner label="Scanning UTXO tree..." />
+              <div className="flex flex-col items-center py-6 gap-2">
+                <Spinner label="Scanning UTXO tree…" />
+                <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                  {elapsed}s elapsed — scanning up to 10,000 positions
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
