@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import Panel from "@/components/ui/Panel";
@@ -15,10 +15,8 @@ import { useUmbra } from "@/hooks/useUmbra";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useEncryptedBalance } from "@/hooks/useEncryptedBalance";
 import { formatBalance } from "@/lib/umbra/balance";
-import { scanAndClaimUtxos } from "@/lib/umbra/receive";
-import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
-import { trackEvent } from "@/lib/torque/events";
+import { useClaimBackground } from "@/components/providers/ClaimProvider";
 import { loadActivities, type LocalActivity } from "@/lib/activity-log";
 
 function timeAgo(ts: number): string {
@@ -103,11 +101,8 @@ export default function DashboardPage() {
   const { client, registrationState, register, isReady } = useUmbra();
   const portfolio = usePortfolio();
   const encryptedBalance = useEncryptedBalance(client, isReady);
-  const { toast } = useToast();
+  const { claiming, claimElapsed, startClaim, lastClaimAt } = useClaimBackground();
 
-  const [claiming, setClaiming] = useState(false);
-  const [claimElapsed, setClaimElapsed] = useState(0);
-  const claimTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [localActivity, setLocalActivity] = useState<LocalActivity[]>([]);
 
   useEffect(() => {
@@ -115,27 +110,11 @@ export default function DashboardPage() {
     setLocalActivity(loadActivities(publicKey.toBase58()).slice(0, 5));
   }, [publicKey]);
 
-  const handleClaimAll = useCallback(async () => {
-    if (!client || claiming) return;
-    setClaiming(true);
-    setClaimElapsed(0);
-    claimTimerRef.current = setInterval(() => setClaimElapsed((e) => e + 1), 1000);
-    try {
-      const { claimed } = await scanAndClaimUtxos(client);
-      if (claimed > 0) {
-        toast("success", `${claimed} payment${claimed > 1 ? "s" : ""} claimed — balance updating`);
-        encryptedBalance.refresh();
-        if (publicKey) trackEvent(publicKey.toBase58(), "claim_completed", { amount: claimed });
-      } else {
-        toast("info", "No pending payments");
-      }
-    } catch (err) {
-      toast("error", "Claim failed", err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      if (claimTimerRef.current) clearInterval(claimTimerRef.current);
-      setClaiming(false);
-    }
-  }, [client, claiming, toast, encryptedBalance]);
+  // Refresh balance whenever a background claim completes
+  useEffect(() => {
+    if (lastClaimAt) encryptedBalance.refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastClaimAt]);
 
   // Total private balance in USD (no oracle — show raw token amounts)
   const sharedBalances = encryptedBalance.balances.filter((b) => !b.mxeMode && !b.callbackPending && b.balance > 0);
@@ -253,7 +232,7 @@ export default function DashboardPage() {
               </>
             )}
             {isReady && (
-              <Button variant="ghost" size="sm" onClick={handleClaimAll} disabled={claiming}>
+              <Button variant="ghost" size="sm" onClick={startClaim} disabled={claiming}>
                 {claiming ? (
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />

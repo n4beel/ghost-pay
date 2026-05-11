@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
 import { ToastProvider } from "@/components/ui/Toast";
 import { UmbraProvider } from "./UmbraProvider";
+import { ClaimProvider } from "./ClaimProvider";
 
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_ENDPOINT!;
 const RPC_WS_ENDPOINT = process.env.NEXT_PUBLIC_RPC_WS_ENDPOINT!;
@@ -20,7 +21,9 @@ export default function WalletProvider({ children }: { children: React.ReactNode
       <SolanaWalletProvider wallets={wallets} autoConnect>
         <ToastProvider>
           <UmbraProvider>
-            {children}
+            <ClaimProvider>
+              {children}
+            </ClaimProvider>
           </UmbraProvider>
         </ToastProvider>
       </SolanaWalletProvider>
