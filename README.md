@@ -49,9 +49,9 @@ Income arrives (public wallet)
 
 ## Live Demo
 
-**App:** [https://ghost-pay.vercel.app](https://ghost-pay.vercel.app)  
+**App:** [https://ghost-pay.nabeelkhan.dev](https://ghost-pay.nabeelkhan.dev)  
 **GitHub:** [https://github.com/n4beel/ghost-pay](https://github.com/n4beel/ghost-pay)  
-**Pay Link example:** `https://ghost-pay.vercel.app/pay/alice.sol`
+**Pay Link example:** `https://ghost-pay.nabeelkhan.dev/pay/alice.sol`
 
 ---
 
@@ -67,7 +67,7 @@ Income arrives (public wallet)
 | **Payroll** | Upload a CSV of recipients + amounts → Cloak disperses salaries privately in one transaction |
 | **Compliance** | Generate scoped viewing keys for auditors — selective transparency on your terms |
 | **Rewards** | Leaderboard of top private payment senders, powered by Torque incentive events |
-| **Pay Links** | `ghost-pay.vercel.app/pay/alice.sol` — shareable payment pages that work with any `.sol` name or wallet address |
+| **Pay Links** | `ghost-pay.nabeelkhan.dev/pay/alice.sol` — shareable payment pages that work with any `.sol` name or wallet address |
 | **Portfolio** | Public balance shown via Dune SIM simulation + Covalent USD pricing |
 | **Activity Log** | Persistent local activity history for all private operations |
 | **PUSD support** | Palm USD stablecoin natively supported across all flows |
@@ -247,8 +247,8 @@ This makes Ghost Pay **regulator-ready** without sacrificing privacy by default.
 Any wallet or `.sol` name gets a shareable pay link:
 
 ```
-https://ghost-pay.vercel.app/pay/alice.sol
-https://ghost-pay.vercel.app/pay/9xQeWvG...
+https://ghost-pay.nabeelkhan.dev/pay/alice.sol
+https://ghost-pay.nabeelkhan.dev/pay/9xQeWvG...
 ```
 
 The recipient connects their wallet on that page and sends — the payment goes through Umbra's stealth UTXO system automatically. The sender never learns the recipient's actual wallet address unless they already know it.
@@ -444,7 +444,7 @@ Built by a **solo Pakistani developer** specializing in backend, blockchain, and
 
 Ghost Pay addresses a real problem for Pakistani users: international payments in crypto are increasingly monitored, creating risks for freelancers receiving legitimate payment. A privacy-preserving payment layer that is usable by non-technical users directly addresses this gap.
 
-Contact: na268666@gmail.com
+Contact: contact@nabeelkhan.dev
 
 ---
 

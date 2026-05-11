@@ -272,7 +272,7 @@ npm run dev
 
 ## Live Demo
 
-https://ghost-pay.vercel.app
+https://ghost-pay.nabeelkhan.dev
 ```
 
 ---
