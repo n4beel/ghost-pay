@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ConnectButton from "@/components/ui/ConnectButton";
 import { useUmbra } from "@/hooks/useUmbra";
@@ -62,10 +63,8 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-6 py-5 flex-shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-mono font-semibold tracking-tight" style={{ color: "var(--accent)" }}>
-            ◎
-          </span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image src="/ghost-32.png" alt="Ghost Pay" width={22} height={22} priority />
           <span className="text-[15px] font-semibold tracking-[-0.01em]" style={{ color: "var(--text-primary)" }}>
             Ghost Pay
           </span>

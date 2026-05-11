@@ -11,6 +11,8 @@ import { TOKENS, SUPPORTED_TOKENS, type TokenSymbol } from "@/lib/tokens";
 import type { UmbraClient } from "@/lib/umbra/client";
 import type { EncryptedTokenBalance } from "@/lib/umbra/balance";
 import { formatBalance } from "@/lib/umbra/balance";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { logActivity } from "@/lib/activity-log";
 
 interface UnshieldModalProps {
   client: UmbraClient;
@@ -26,6 +28,7 @@ export default function UnshieldModal({
   trigger,
 }: UnshieldModalProps) {
   const { toast } = useToast();
+  const { publicKey } = useWallet();
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<TokenSymbol>("USDC");
   const [amount, setAmount] = useState("");
@@ -43,6 +46,9 @@ export default function UnshieldModal({
     try {
       await unshieldTokens(client, tokenInfo.mint, lamports);
       toast("success", "Unshielded", `${amount} ${token} returned to public balance`);
+      if (publicKey) {
+        logActivity(publicKey.toBase58(), { type: "unshield", token, amount, timestamp: Date.now() });
+      }
       setAmount("");
       setOpen(false);
       onSuccess?.();

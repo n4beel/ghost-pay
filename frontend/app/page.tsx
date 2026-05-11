@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import RedactedValue from "@/components/ui/RedactedValue";
 
 const FEATURES = [
   {
@@ -34,10 +38,8 @@ export default function LandingPage() {
         className="flex items-center justify-between px-8 py-5"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-mono font-semibold" style={{ color: "var(--accent)" }}>
-            ◎
-          </span>
+        <div className="flex items-center gap-2.5">
+          <Image src="/ghost-32.png" alt="Ghost Pay" width={22} height={22} priority />
           <span className="text-[15px] font-semibold tracking-[-0.01em]">Ghost Pay</span>
         </div>
         <Link
@@ -117,7 +119,7 @@ export default function LandingPage() {
             </a>
           </div>
 
-          {/* Redacted preview */}
+          {/* Redacted balance preview */}
           <div
             className="mt-16 mx-auto p-5 text-left"
             style={{
@@ -132,27 +134,13 @@ export default function LandingPage() {
             >
               Private Balance
             </p>
-            <div
-              className="font-mono text-[32px] font-semibold blur-sm select-none"
-              style={{ color: "var(--text-primary)" }}
-            >
-              $4,209.00
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.04em]"
-                style={{
-                  background: "var(--privacy-dim)",
-                  border: "1px solid #7B5EA740",
-                  color: "#A07EC8",
-                }}
-              >
-                Private
-              </span>
-              <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
-                click to reveal
-              </span>
-            </div>
+            <RedactedValue
+              value="4,209.00 USDC"
+              className="text-[32px] font-semibold"
+            />
+            <p className="text-[11px] mt-2" style={{ color: "var(--text-tertiary)" }}>
+              Encrypted on-chain · click to reveal
+            </p>
           </div>
         </div>
       </section>

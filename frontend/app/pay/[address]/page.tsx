@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Panel from "@/components/ui/Panel";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -67,8 +68,8 @@ export default function PayPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16" style={{ background: "var(--bg-base)" }}>
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 mb-8">
-        <span className="text-lg font-mono font-semibold" style={{ color: "var(--accent)" }}>◎</span>
+      <Link href="/" className="flex items-center gap-2.5 mb-8">
+        <Image src="/ghost-32.png" alt="Ghost Pay" width={22} height={22} priority />
         <span className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>Ghost Pay</span>
       </Link>
 

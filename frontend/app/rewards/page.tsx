@@ -40,7 +40,7 @@ export default function RewardsPage() {
           Connect your wallet to view rewards.
         </p>
       ) : (
-        <div className="flex flex-col gap-4" style={{ maxWidth: "560px" }}>
+        <div className="flex flex-col gap-4 mx-auto w-full" style={{ maxWidth: "560px" }}>
           <Panel noPadding>
             <div
               className="px-5 py-3 flex items-center justify-between"

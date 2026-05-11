@@ -19,10 +19,18 @@ export const metadata: Metadata = {
   title: "Ghost Pay — Private Payments on Solana",
   description:
     "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy.",
+  icons: {
+    icon: [
+      { url: "/ghost-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/ghost-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: { url: "/ghost-128.png", sizes: "128x128", type: "image/png" },
+  },
   openGraph: {
     title: "Ghost Pay",
     description: "Pay anyone, reveal nothing.",
     type: "website",
+    images: [{ url: "/ghost-256.png" }],
   },
 };
 

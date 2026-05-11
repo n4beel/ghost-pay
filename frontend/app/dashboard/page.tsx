@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import Panel from "@/components/ui/Panel";
@@ -19,6 +19,7 @@ import { scanAndClaimUtxos } from "@/lib/umbra/receive";
 import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
 import { trackEvent } from "@/lib/torque/events";
+import { loadActivities, type LocalActivity } from "@/lib/activity-log";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -107,6 +108,12 @@ export default function DashboardPage() {
   const [claiming, setClaiming] = useState(false);
   const [claimElapsed, setClaimElapsed] = useState(0);
   const claimTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [localActivity, setLocalActivity] = useState<LocalActivity[]>([]);
+
+  useEffect(() => {
+    if (!publicKey) { setLocalActivity([]); return; }
+    setLocalActivity(loadActivities(publicKey.toBase58()).slice(0, 5));
+  }, [publicKey]);
 
   const handleClaimAll = useCallback(async () => {
     if (!client || claiming) return;
@@ -151,6 +158,7 @@ export default function DashboardPage() {
 
   return (
     <PageShell title="Dashboard">
+      <div className="mx-auto w-full" style={{ maxWidth: "900px" }}>
       <RegistrationBanner state={registrationState} onRegister={register} />
 
       {/* Balance cards */}
@@ -294,34 +302,15 @@ export default function DashboardPage() {
           className="px-5 py-4 flex items-center justify-between"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
-          <div>
-            <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
-              Recent Activity
-            </p>
-            <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
-              via Dune SIM
-            </p>
-          </div>
+          <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
+            Recent Activity
+          </p>
           <Link href="/history" className="text-[12px]" style={{ color: "var(--accent)" }}>
             View all
           </Link>
         </div>
 
-        {portfolio.loading ? (
-          <div className="flex flex-col">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 px-5 py-3"
-                style={{ borderBottom: "1px solid var(--border-subtle)" }}
-              >
-                <div className="w-4 h-4 skeleton rounded" />
-                <div className="flex-1 h-4 skeleton" />
-                <div className="w-16 h-4 skeleton" />
-              </div>
-            ))}
-          </div>
-        ) : portfolio.activities.length === 0 ? (
+        {localActivity.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
               No activity yet
@@ -331,31 +320,41 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          portfolio.activities.slice(0, 5).map((a, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 px-5 py-3"
-              style={{
-                borderBottom: i < Math.min(4, portfolio.activities.length - 1) ? "1px solid var(--border-subtle)" : "none",
-              }}
-            >
-              <span className="font-mono text-sm w-4 text-center" style={{ color: "var(--text-tertiary)" }}>
-                {a.type === "receive" ? "←" : "→"}
-              </span>
-              <span className="flex-1 text-[13px] capitalize" style={{ color: "var(--text-primary)" }}>
-                {a.type}
-              </span>
-              <span className="font-mono text-[12px]" style={{ color: "var(--text-secondary)" }}>
-                {a.amount ?? "[Private]"}
-              </span>
-              <Badge variant={a.type === "receive" ? "confirmed" : "private"}>{a.token}</Badge>
-              <span className="text-[11px] w-16 text-right" style={{ color: "var(--text-tertiary)" }}>
-                {timeAgo(a.timestamp)}
-              </span>
-            </div>
-          ))
+          localActivity.map((a, i) => {
+            const arrow = a.type === "claim" || a.type === "shield" ? "←" : "→";
+            const label: Record<LocalActivity["type"], string> = {
+              send: "Sent", send_vault: "Sent (Vault)", shield: "Shielded",
+              unshield: "Unshielded", claim: "Claimed", payroll: "Payroll",
+            };
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-4 px-5 py-3"
+                style={{
+                  borderBottom: i < localActivity.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                }}
+              >
+                <span className="font-mono text-sm w-4 text-center" style={{ color: "var(--text-tertiary)" }}>
+                  {arrow}
+                </span>
+                <span className="flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
+                  {label[a.type]}
+                </span>
+                <span className="font-mono text-[12px]" style={{ color: "var(--text-secondary)" }}>
+                  {a.amount}
+                </span>
+                <Badge variant={a.type === "send" || a.type === "send_vault" || a.type === "claim" ? "private" : "confirmed"}>
+                  {a.token}
+                </Badge>
+                <span className="text-[11px] w-16 text-right" style={{ color: "var(--text-tertiary)" }}>
+                  {timeAgo(a.timestamp)}
+                </span>
+              </div>
+            );
+          })
         )}
       </Panel>
+      </div>
     </PageShell>
   );
 }

@@ -12,6 +12,7 @@ import { scanAndClaimUtxos } from "@/lib/umbra/receive";
 import { reverseResolveSns } from "@/lib/sns";
 import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
+import { logActivity } from "@/lib/activity-log";
 
 export default function ReceivePage() {
   const { connected, publicKey } = useWallet();
@@ -41,6 +42,14 @@ export default function ReceivePage() {
         claimed > 0 ? "success" : "info",
         claimed > 0 ? `Claimed ${claimed} payment${claimed > 1 ? "s" : ""}` : "No new payments found",
       );
+      if (claimed > 0 && publicKey) {
+        logActivity(publicKey.toBase58(), {
+          type: "claim",
+          token: "mixed",
+          amount: String(claimed),
+          timestamp: Date.now(),
+        });
+      }
     } catch (err) {
       toast("error", "Scan failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -57,7 +66,7 @@ export default function ReceivePage() {
       {!connected ? (
         <NotConnectedView message="Connect your wallet to receive payments." />
       ) : (
-        <div className="flex flex-col gap-4" style={{ maxWidth: "480px" }}>
+        <div className="flex flex-col gap-4 mx-auto w-full" style={{ maxWidth: "480px" }}>
           {/* Address card */}
           <Panel>
             <p

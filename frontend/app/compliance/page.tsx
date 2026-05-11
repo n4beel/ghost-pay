@@ -95,7 +95,7 @@ export default function CompliancePage() {
       {!connected ? (
         <NotConnectedView message="Connect your wallet to manage compliance grants." />
       ) : (
-        <div className="flex flex-col gap-4" style={{ maxWidth: "560px" }}>
+        <div className="flex flex-col gap-4 mx-auto w-full" style={{ maxWidth: "560px" }}>
           <Panel>
             <div className="flex items-center gap-2 mb-4">
               <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>

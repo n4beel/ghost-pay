@@ -11,6 +11,7 @@ import { resolveSnsDomain, isSolDomain } from "@/lib/sns";
 import { disbursePayroll, type PayrollRecipient, type PayrollResult } from "@/lib/cloak/payroll";
 import { useToast } from "@/components/ui/Toast";
 import { trackEvent } from "@/lib/torque/events";
+import { logActivity } from "@/lib/activity-log";
 
 interface ParsedRow {
   name: string;
@@ -149,6 +150,12 @@ export default function PayrollPage() {
         token: "USDC",
         route: "cloak",
       });
+      logActivity(publicKey.toBase58(), {
+        type: "payroll",
+        token: "USDC",
+        amount: String(totalAmount),
+        timestamp: Date.now(),
+      });
     } catch (err) {
       toast("error", "Payroll failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -165,7 +172,7 @@ export default function PayrollPage() {
       {!connected ? (
         <NotConnectedView message="Connect your wallet to use payroll." />
       ) : (
-        <div className="flex flex-col gap-4" style={{ maxWidth: "640px" }}>
+        <div className="flex flex-col gap-4 mx-auto w-full" style={{ maxWidth: "640px" }}>
           <Panel>
             <div className="flex items-center gap-2 mb-4">
               <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
