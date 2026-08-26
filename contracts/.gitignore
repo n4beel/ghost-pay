@@ -1,0 +1,11 @@
+# Foundry build output
+out/
+cache/
+
+# Dependencies. `forge install --no-git` writes plain copies of whole repositories here rather
+# than submodules, so without this the next `git add -A` commits all of forge-std.
+lib/
+
+# Deployment receipts. Real broadcasts are kept — knowing which addresses we deployed, from which
+# commit, is worth having in history, and the mainnet ones are permanent. Dry runs are local noise.
+broadcast/*/*/dry-run/
