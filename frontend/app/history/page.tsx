@@ -8,6 +8,9 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { usePortfolio, type ActivityItem } from "@/hooks/usePortfolio";
 import NotConnectedView from "@/components/ui/NotConnectedView";
 import { loadActivities, type LocalActivity } from "@/lib/activity-log";
+import { useChain } from "@/components/providers/ChainProvider";
+import BotChainGate from "@/components/botchain/BotChainGate";
+import BotChainHistory from "@/components/botchain/BotChainHistory";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -54,6 +57,23 @@ const typeArrow: Record<ActivityItem["type"] | LocalActivity["type"], string> = 
 };
 
 export default function HistoryPage() {
+  const { isBotChain } = useChain();
+
+  if (isBotChain) return <BotChainHistoryPage />;
+  return <SolanaHistoryPage />;
+}
+
+function BotChainHistoryPage() {
+  return (
+    <PageShell title="History" description="Stealth payments received on BOT Chain">
+      <BotChainGate>
+        <BotChainHistory />
+      </BotChainGate>
+    </PageShell>
+  );
+}
+
+function SolanaHistoryPage() {
   const { publicKey, connected } = useWallet();
   const { activities: duneActivities, loading } = usePortfolio();
   const [localActivities, setLocalActivities] = useState<LocalActivity[]>([]);

@@ -185,11 +185,80 @@ public, sender public. The differences are stated rather than smoothed over, bec
 review is exactly the audience that checks a privacy claim against the chain, and implying parity
 is a claim two minutes on an explorer disproves.
 
+### Done — first real MetaMask run, and what it found
+
+The full loop worked on Bohr: unlock, publish, resolve a recipient by their plain address, send,
+scan, claim. Five things came out of it.
+
+- **`/dashboard` and `/history` now have BOT Chain branches.** They were marked as BOT Chain pages
+  in the sidebar while rendering their Solana views, so a connected EVM wallet was told to connect
+  a wallet. The dashboard shows the public balance and the unclaimed stealth total as two separate
+  figures — never summed, because the second is not spendable from the first until claimed. History
+  is incoming only: a stealth payment you *send* leaves nothing on chain tied to your identity, and
+  an empty "sent" column would read as broken rather than as the point of the scheme.
+- **A failing live watcher no longer presents as a failed scan.** Bohr's RPC has no
+  `eth_newFilter`, so `watchEvent` errored and the receive page showed a red error above a list of
+  payments it had loaded perfectly well. `watchEvent` now polls with `eth_getLogs` (`poll: true`),
+  and a watcher failure surfaces as a quiet "press Rescan" line instead of a page error.
+- **Swept addresses keep dust, and the UI now knows it.** EIP-1559 refunds the gap between
+  `maxFeePerGas` and the price actually paid, so every sweep leaves a remainder. It was being
+  offered as claimable, and claiming it failed — correctly, since it costs more to move than it is
+  worth. `isDust()` recognises it and the row reads Claimed.
+- **The wrong-network state is recoverable.** With Phantom also injecting an EVM provider, wagmi
+  reconnected to it on Ethereum mainnet and the sidebar showed "Switch to Bohr Testnet" with no
+  indication of which wallet was connected and no way out — it read as "not connected". It now
+  names the connector and offers Disconnect.
+- **Re-unlocking after an account switch is correct, not a bug.** Keys live in memory and are
+  cleared on account change; anything else would leave one account's spending key reachable from
+  another account's UI.
+
+### Done — contract tests
+
+`contracts/test/GhostPayStealthSend.t.sol` covers all five revert paths, atomicity of the
+announcement and the transfer, payment to a smart account beyond the `transfer` stipend, and a fuzz
+run over amounts.
+
+All twelve pass. One failed on the first run and the test was wrong, not the contract:
+`vm.recordLogs()` is not revert-aware — it returns entries emitted inside frames that later
+reverted, which is an artefact of how Foundry's inspector collects them and not what the chain
+does. Atomicity is now asserted through a counting announcer's storage, since state does roll back,
+and the same forwarder is shown announcing on a successful send so the zero is a rollback rather
+than a wiring mistake.
+
+`foundry.toml` sets `no_match_path = "lib/**"`. Without it `forge test` runs forge-std's own suite,
+which fails on filesystem permissions and mainnet RPC access and buries real failures under
+twenty-one unrelated ones.
+
 ### Next — P6, verify and mainnet cutover
 
-**Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
-the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
-`SOL`; right now the nav overstates what works.
+---
+
+## Deployments
+
+### Bohr testnet (968) — 2026-08-26
+
+| Contract | Address |
+|---|---|
+| `ERC5564Announcer` | `0x6212BB579339F6523FCC100F49e1136922a3f3Ce` |
+| `ERC6538Registry` | `0x8d1B71628BBC0EDD95b652674BB0F81DeB6Cf767` |
+| `GhostPayStealthSend` | `0xD4F25c861905DBe99f40A1361C167b404f4000A2` |
+| Scan from block | `21243953` |
+
+Deployed in blocks 21243965–21243966; the scan start is deliberately earlier. The script reads
+`block.number` during simulation, before the transactions are mined, so the printed value is always
+behind the real one. Early is the safe direction — a start block *after* the first announcement
+would silently hide payments, whereas a few blocks early costs nine seconds of scanning on a
+0.75s chain.
+
+Deployment cost 0.0222 BOT at 20 gwei, 1,111,164 gas across the three.
+
+The deployer holds no privileges afterwards: none of the three contracts has an owner, an admin
+function, `selfdestruct` or `delegatecall`, and `GhostPayStealthSend` holds its announcer in an
+`immutable`. The key is spent the moment the transaction lands.
+
+### BOT Chain mainnet (677)
+
+Not deployed. See P6.
 
 ---
 
@@ -239,7 +308,7 @@ Use `@noble/curves` v2 directly (`secp256k1.Point`, `Point.fromBytes`, `.multipl
 `.toBytes`) plus viem's `keccak256`. ScopeLift's `stealth-address-sdk` is worth reading as reference
 but makes assumptions about which chains exist.
 
-**Deriving keys from an EVM wallet.** Bo Wallet will not hand you two keypairs. The Umbra Cash
+**Deriving keys from an EVM wallet.** No EVM wallet hands you two keypairs. The Umbra Cash
 pattern: user signs a fixed message once, hash the signature into a seed, derive
 `p_spend = keccak256(seed ‖ "spend")` and `p_view = keccak256(seed ‖ "view")`, each reduced mod n
 with a zero check. Deterministic, recoverable on any device, nothing to store. Mirrors the existing
@@ -249,18 +318,15 @@ with a zero check. Deterministic, recoverable on any device, nothing to store. M
 
 ## Landmines
 
-**MPC signing may not be deterministic.** *Unresolved and load-bearing.* Bo Wallet supports MPC
-accounts. Signature-derived keys assume signing the same message twice returns the same bytes, which
-holds for RFC-6979 signers but is not guaranteed for threshold schemes. If it does not hold, users
-get different stealth keys every session and lose their funds. **Test this before writing P2:**
-connect an MPC Bo Wallet account, sign the same message twice, compare bytes. Fallback is derive
-once, encrypt under a wallet-derived secret, persist — and then a key export flow becomes mandatory,
-because mobile webview storage is cleared more aggressively than desktop browser storage.
+**Bo Wallet cannot be used. Settled.** Confirmed with BOT Chain: no browser extension and no
+in-app dApp browser, so there is no way for a web page to reach it. MetaMask is the wallet for this
+path, and the listing's "native wallet" requirement now rests entirely on BOT Chain accepting
+MetaMask-with-BOT-Chain-added — the one open question that can still invalidate the integration.
 
-**Bo Wallet is mobile only.** iOS and Android app, no browser extension, so no `window.ethereum` on
-desktop. Hence both connectors in `EvmProvider`: `injected()` covers MetaMask on desktop and Bo
-Wallet's in-app dApp browser; `walletConnect()` covers phone-to-desktop pairing. Which of the two Bo
-Wallet actually supports is still unknown — install it and find out.
+This closes the MPC question with it. MetaMask signs per RFC-6979, so signature-derived keys are
+deterministic by construction. `assertDeterministicDerivation` and the persisted meta-address check
+both stay: they cost one extra signature, they are the difference between an error and someone
+losing funds, and whatever wallet BOT Chain ships next is not required to be deterministic.
 
 **Ghost Pay has no mobile layout.** Four responsive breakpoint usages in the whole frontend, two of
 them in `Button.tsx`. `PageShell` is `flex h-screen overflow-hidden` with a fixed 220px sidebar and
@@ -303,14 +369,23 @@ then touch 677.
 
 ## Open questions for BOT Chain
 
-1. Does Bo Wallet have a dApp browser, WalletConnect support, or both?
-2. Is Bo Wallet's MPC signing deterministic?
-3. Can they fund a reviewer wallet with mainnet BOT? There is no mainnet faucet, so a reviewer who
+1. **Does MetaMask with BOT Chain added satisfy the "native wallet" requirement?** This is the one
+   that matters. Bo Wallet has no extension and no dApp browser, so no web application can connect
+   it — meaning either MetaMask counts, or the listing requirement cannot be met by a web app at
+   all. Ask before the mainnet deploy, not after.
+2. Can they fund a reviewer wallet with mainnet BOT? There is no mainnet faucet, so a reviewer who
    cannot get BOT fails our integration for reasons unrelated to our code.
-4. BotScan verifier URL and API key for `forge verify-contract`. Not in the public docs. Unverified
+3. BotScan verifier URL and API key for `forge verify-contract`. Not in the public docs. Unverified
    bytecode behind a privacy app is a bad look for a listing review.
-5. Does MetaMask-with-BOT-Chain-added count as "native wallet" for the listing check, if Bo Wallet
-   turns out to be unreachable from a web dApp?
+4. Does any BOT Chain RPC implement `eth_newFilter`? Bohr's does not, so live payment updates fall
+   back to polling on Rescan. Workable, but worth knowing whether mainnet differs.
+
+### Answered
+
+- **Does Bo Wallet have a dApp browser or WalletConnect?** Neither. It cannot be reached from a web
+  page.
+- **Is Bo Wallet's MPC signing deterministic?** Moot — see above.
+- **BOT decimals?** 18, confirmed from `eth_getBalance`.
 
 ---
 
@@ -323,6 +398,6 @@ npm run dev
 ```
 
 WalletConnect project ID is free from https://dashboard.reown.com. Without it the app falls back to
-injected wallets only and the Bo Wallet pairing path cannot be tested.
+injected wallets only, which loses the QR path to MetaMask on a phone.
 
 Contract deploy steps are in `contracts/README.md`. Testnet first, always.

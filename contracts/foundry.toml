@@ -4,6 +4,10 @@ out = "out"
 libs = ["lib"]
 test = "test"
 script = "script"
+# `forge install --no-git` drops forge-std's whole repository into lib/, its own test suite
+# included, and those tests fail here on filesystem permissions and mainnet RPC access. They are
+# not ours and their noise buries real failures.
+no_match_path = "lib/**"
 solc_version = "0.8.23"
 optimizer = true
 optimizer_runs = 200

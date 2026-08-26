@@ -39,6 +39,15 @@ export function useStealthPayments(viewingKeys: ViewingKeys | null) {
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The live watcher failing is not the scan failing.
+   *
+   * History and live updates are independent: the scan can find every payment you have ever
+   * received while `eth_subscribe`/`eth_getLogs` polling is unavailable. Reporting that as a
+   * page-level error tells the user their payments could not be loaded when they are on screen
+   * directly below it.
+   */
+  const [liveUnavailable, setLiveUnavailable] = useState(false);
   const [nonce, setNonce] = useState(0);
 
   // Invalidated on every re-scan and on unmount, so a slow scan that is still walking history
@@ -78,6 +87,7 @@ export function useStealthPayments(viewingKeys: ViewingKeys | null) {
 
     setScanning(true);
     setError(null);
+    setLiveUnavailable(false);
     setPayments([]);
     setProgress(null);
 
@@ -130,10 +140,10 @@ export function useStealthPayments(viewingKeys: ViewingKeys | null) {
           });
           void readBalances([{ ...match, balance: null }], runRef.current);
         },
-        onError: (err) => setError(err.message),
+        onError: () => setLiveUnavailable(true),
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not watch for payments");
+    } catch {
+      setLiveUnavailable(true);
     }
 
     return () => stop?.();
@@ -148,5 +158,5 @@ export function useStealthPayments(viewingKeys: ViewingKeys | null) {
     });
   }, [readBalances]);
 
-  return { payments, scanning, progress, error, rescan, refreshBalances, ready };
+  return { payments, scanning, progress, error, liveUnavailable, rescan, refreshBalances, ready };
 }

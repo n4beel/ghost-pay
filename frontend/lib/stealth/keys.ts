@@ -55,7 +55,8 @@ const SIGNATURE_BYTES = 65;
  * recovers the same keys on any device by signing the same message with the same wallet.
  *
  * **That recovery property depends entirely on the wallet signing deterministically.** RFC-6979
- * signers do. MPC and threshold signers are not required to, and Bo Wallet offers MPC accounts. A
+ * signers do — MetaMask included, which is what this path uses. MPC and threshold signers are not
+ * required to, so the guard stays for whatever connects next. A
  * wallet that returns different bytes for the same message gives the user different stealth keys
  * every session, and every payment sent to a previous session's meta-address becomes unspendable.
  * Call {@link assertDeterministicDerivation} before treating derived keys as recoverable, and see

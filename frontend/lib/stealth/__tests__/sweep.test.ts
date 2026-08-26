@@ -9,6 +9,7 @@ import {
   NATIVE_TRANSFER_GAS,
   computeStealthPrivateKey,
   deriveSpendingAccountFor,
+  isDust,
   quoteSweep,
 } from "../sweep";
 
@@ -298,5 +299,30 @@ describe("sweep constants", () => {
   it("keeps a non-zero fee buffer", () => {
     expect(FEE_BUFFER_PERCENT).toBeGreaterThan(0n);
     expect(NATIVE_TRANSFER_GAS).toBe(21_000n);
+  });
+});
+
+describe("isDust", () => {
+  const gasPrice = parseGwei("20");
+  const oneTransfer = NATIVE_TRANSFER_GAS * gasPrice;
+
+  it("treats a balance that cannot pay for its own move as dust", () => {
+    // The state a swept address is always left in: the buffer between maxFeePerGas and the price
+    // actually paid comes back as a remainder no transaction can economically move.
+    expect(isDust(0n, gasPrice)).toBe(true);
+    expect(isDust(1n, gasPrice)).toBe(true);
+    expect(isDust(oneTransfer, gasPrice)).toBe(true);
+  });
+
+  it("does not write off a balance worth moving", () => {
+    expect(isDust(oneTransfer * 3n, gasPrice)).toBe(false);
+    expect(isDust(parseEther("1"), gasPrice)).toBe(false);
+  });
+
+  it("tracks the gas price rather than a fixed wei figure", () => {
+    // The same balance is dust on an expensive chain and not on a cheap one.
+    const balance = NATIVE_TRANSFER_GAS * parseGwei("10") * 3n;
+    expect(isDust(balance, parseGwei("10"))).toBe(false);
+    expect(isDust(balance, parseGwei("100"))).toBe(true);
   });
 });

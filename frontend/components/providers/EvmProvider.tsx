@@ -11,13 +11,15 @@ const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 /**
  * EVM wallet stack for the BOT Chain path.
  *
- * Bo Wallet, BOT Chain's native wallet, is a mobile app with no browser extension. That leaves two
- * ways to reach it, and configuring both connectors covers either without needing to know in
- * advance which it supports:
+ * Bo Wallet, BOT Chain's own wallet, cannot be reached from a web page at all: no browser
+ * extension and no in-app dApp browser, confirmed with BOT Chain. There is no code that fixes
+ * that, so MetaMask is the wallet for this path.
  *
- *   injected()      - MetaMask on desktop, and Bo Wallet's in-app dApp browser, where the webview
- *                     injects a provider like any extension would.
- *   walletConnect() - Bo Wallet on a phone paired to a desktop page over QR.
+ *   injected()      - MetaMask's extension on desktop, and its mobile in-app browser.
+ *   walletConnect() - MetaMask on a phone paired to a desktop page over QR.
+ *
+ * Both connectors stay. They now cover desktop and mobile MetaMask rather than two guesses at how
+ * Bo Wallet might connect, and the second is what makes the mobile work in P4 reachable.
  *
  * WalletConnect is only registered when a project ID is present, so a missing env var degrades to
  * injected-only rather than throwing at module load.

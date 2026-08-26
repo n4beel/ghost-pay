@@ -257,6 +257,15 @@ async function main() {
       await page.goto(`${APP}/receive`, { waitUntil: "networkidle" });
       await page.getByText(/Share your payment address/i).waitFor({ timeout: 20000 });
     });
+    await step("dashboard and history fall back to Solana", async () => {
+      // Both branch on the active chain now, so both are part of the gate's surface.
+      await page.goto(`${APP}/dashboard`, { waitUntil: "networkidle" });
+      await page.getByText(/Connect your wallet to access Ghost Pay/i).waitFor({ timeout: 20000 });
+      await page.goto(`${APP}/history`, { waitUntil: "networkidle" });
+      if (await page.getByText(/Stealth payments received/i).isVisible().catch(() => false)) {
+        throw new Error("history rendered the BOT Chain branch with the flag off");
+      }
+    });
     await step("landing page does not advertise BOT Chain", async () => {
       await page.goto(`${APP}/`, { waitUntil: "networkidle" });
       if (await page.getByText(/Also on BOT Chain/i).isVisible().catch(() => false)) {
