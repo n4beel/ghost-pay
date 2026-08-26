@@ -26,6 +26,7 @@ All planning docs live in `DOCUMENTATION/`:
 | `DOCUMENTATION/TASKS.md` | Master task list with checkboxes — the source of truth for what's done and what's next |
 | `DOCUMENTATION/DESIGN_BRIEF.md` | UI/UX system — colors, typography, component patterns, what NOT to do |
 | `DOCUMENTATION/SUBMISSION_CHECKLIST.md` | Per-track submission fields, demo requirements, README template |
+| `DOCUMENTATION/BOTCHAIN.md` | BOT Chain listing integration — ERC-5564 stealth sends. Read before touching `contracts/`, `lib/botchain/`, or the EVM providers |
 
 ---
 
