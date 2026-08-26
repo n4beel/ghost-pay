@@ -6,6 +6,20 @@ import {ERC5564Announcer} from "../src/ERC5564Announcer.sol";
 import {GhostPayStealthSend} from "../src/GhostPayStealthSend.sol";
 import {IERC5564Announcer} from "../src/interfaces/IERC5564Announcer.sol";
 
+/// @notice An announcer that keeps a count, so a rollback is observable.
+///
+/// State reverts with the call; Foundry's log recorder does not. `vm.recordLogs()` returns entries
+/// emitted inside frames that later reverted, which is an artefact of how the inspector collects
+/// them and not what the chain does — a reverted transaction emits nothing. Counting in storage is
+/// the only way to assert the real semantics from a test.
+contract CountingAnnouncer is IERC5564Announcer {
+  uint256 public count;
+
+  function announce(uint256, address, bytes memory, bytes memory) external {
+    count += 1;
+  }
+}
+
 /// @notice Rejects everything sent to it, to exercise the transfer-failure path.
 contract Rejector {
   receive() external payable {
@@ -149,17 +163,28 @@ contract GhostPayStealthSendTest is Test {
   /// @dev The property the whole contract exists for: the announcement and the money are atomic.
   /// A failed transfer must take the announcement with it, or recipients scan for payments that
   /// were never delivered.
+  ///
+  /// Asserted through the announcer's own storage rather than through `vm.recordLogs()`. Foundry's
+  /// recorder is not revert-aware — it returns entries from frames that later reverted — so a
+  /// log-based version of this test fails against a contract that is behaving correctly.
   function test_FailedTransferRollsBackTheAnnouncement() public {
+    CountingAnnouncer counting = new CountingAnnouncer();
+    GhostPayStealthSend forwarder = new GhostPayStealthSend(counting);
     Rejector rejector = new Rejector();
 
-    vm.recordLogs();
     vm.prank(sender);
-    try stealthSend.send{value: 1 ether}(address(rejector), ephemeralKey, metadata) {
+    try forwarder.send{value: 1 ether}(address(rejector), ephemeralKey, metadata) {
       revert("expected revert");
     } catch {}
 
-    assertEq(vm.getRecordedLogs().length, 0);
-    assertEq(sender.balance, 100 ether);
+    assertEq(counting.count(), 0, "announcement survived a failed transfer");
+    assertEq(sender.balance, 100 ether, "value was not returned");
+
+    // And the same forwarder does announce when the transfer succeeds, so the zero above is a
+    // rollback rather than a wiring mistake.
+    vm.prank(sender);
+    forwarder.send{value: 1 ether}(stealth, ephemeralKey, metadata);
+    assertEq(counting.count(), 1);
   }
 
   function testFuzz_ForwardsAnyNonZeroAmount(uint96 amount) public {

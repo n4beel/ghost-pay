@@ -218,10 +218,16 @@ scan, claim. Five things came out of it.
 announcement and the transfer, payment to a smart account beyond the `transfer` stipend, and a fuzz
 run over amounts.
 
-**These have never been executed.** Foundry's release hosts are unreachable from the sandbox this
-was written in. The file type-checks clean against current `forge-std` via solc-js — every cheatcode
-and custom-error selector resolves — but whether the assertions hold is unverified. Run
-`forge test -vv` before trusting it, and before mainnet.
+All twelve pass. One failed on the first run and the test was wrong, not the contract:
+`vm.recordLogs()` is not revert-aware — it returns entries emitted inside frames that later
+reverted, which is an artefact of how Foundry's inspector collects them and not what the chain
+does. Atomicity is now asserted through a counting announcer's storage, since state does roll back,
+and the same forwarder is shown announcing on a successful send so the zero is a rollback rather
+than a wiring mistake.
+
+`foundry.toml` sets `no_match_path = "lib/**"`. Without it `forge test` runs forge-std's own suite,
+which fails on filesystem permissions and mainnet RPC access and buries real failures under
+twenty-one unrelated ones.
 
 ### Next — P6, verify and mainnet cutover
 
