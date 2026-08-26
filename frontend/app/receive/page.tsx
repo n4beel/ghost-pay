@@ -13,8 +13,31 @@ import { reverseResolveSns } from "@/lib/sns";
 import { useToast } from "@/components/ui/Toast";
 import NotConnectedView from "@/components/ui/NotConnectedView";
 import { logActivity } from "@/lib/activity-log";
+import { useChain } from "@/components/providers/ChainProvider";
+import BotChainGate from "@/components/botchain/BotChainGate";
+import StealthReceivePanel from "@/components/botchain/StealthReceivePanel";
 
 export default function ReceivePage() {
+  const { isBotChain } = useChain();
+
+  if (isBotChain) return <BotChainReceivePage />;
+  return <SolanaReceivePage />;
+}
+
+function BotChainReceivePage() {
+  return (
+    <PageShell
+      title="Receive"
+      description="Publish your stealth keys, then find and claim payments made to them"
+    >
+      <BotChainGate>
+        <StealthReceivePanel />
+      </BotChainGate>
+    </PageShell>
+  );
+}
+
+function SolanaReceivePage() {
   const { connected, publicKey } = useWallet();
   const { client, isReady } = useUmbra();
   const { toast } = useToast();

@@ -57,16 +57,19 @@ export function isBotChainId(id: number | undefined): id is BotChainId {
   return id === botChain.id || id === bohrTestnet.id;
 }
 
+/** The chain definition for a BOT Chain ID. Defaults to the testnet for anything unrecognised. */
+export function botChainById(chainId: number) {
+  return chainId === botChain.id ? botChain : bohrTestnet;
+}
+
 /** Explorer link for a transaction hash on whichever BOT Chain network it happened on. */
 export function txUrl(chainId: number, hash: string): string {
-  const chain = chainId === botChain.id ? botChain : bohrTestnet;
-  return `${chain.blockExplorers.default.url}/tx/${hash}`;
+  return `${botChainById(chainId).blockExplorers.default.url}/tx/${hash}`;
 }
 
 /** Explorer link for an address. */
 export function addressUrl(chainId: number, address: string): string {
-  const chain = chainId === botChain.id ? botChain : bohrTestnet;
-  return `${chain.blockExplorers.default.url}/address/${address}`;
+  return `${botChainById(chainId).blockExplorers.default.url}/address/${address}`;
 }
 
 /** Where a user with no BOT is sent to get some. */
