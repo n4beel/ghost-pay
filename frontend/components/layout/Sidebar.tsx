@@ -3,24 +3,32 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import ConnectButton from "@/components/ui/ConnectButton";
+import WalletControl from "@/components/ui/WalletControl";
+import { useChain } from "@/components/providers/ChainProvider";
 import { useUmbra } from "@/hooks/useUmbra";
 import { useWallet } from "@solana/wallet-adapter-react";
 
+// `botChain: false` marks a page that has no BOT Chain implementation. Those stay visible but are
+// flagged, so the nav tells the truth about what works on the selected chain instead of leading the
+// user to a dead end.
 const NAV_LINKS = [
-  { href: "/dashboard",   label: "Dashboard" },
-  { href: "/send",        label: "Send" },
-  { href: "/receive",     label: "Receive" },
-  { href: "/payroll",     label: "Payroll" },
-  { href: "/history",     label: "History" },
-  { href: "/compliance",  label: "Compliance" },
-  { href: "/rewards",     label: "Rewards" },
+  { href: "/dashboard",   label: "Dashboard",  botChain: true },
+  { href: "/send",        label: "Send",       botChain: true },
+  { href: "/receive",     label: "Receive",    botChain: true },
+  { href: "/payroll",     label: "Payroll",    botChain: false },
+  { href: "/history",     label: "History",    botChain: true },
+  { href: "/compliance",  label: "Compliance", botChain: false },
+  { href: "/rewards",     label: "Rewards",    botChain: false },
 ];
 
 function UmbraStatusBadge() {
   const { connected } = useWallet();
   const { registrationState } = useUmbra();
+  const { isBotChain } = useChain();
 
+  // Umbra is Solana-only. Showing its registration state while BOT Chain is selected would be
+  // reporting on a wallet the user is not currently using.
+  if (isBotChain) return null;
   if (!connected || registrationState === "unknown") return null;
 
   const map: Record<string, { label: string; color: string }> = {
@@ -51,6 +59,7 @@ function UmbraStatusBadge() {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isBotChain } = useChain();
 
   return (
     <aside
@@ -73,20 +82,38 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 flex flex-col" style={{ gap: "2px" }}>
-        {NAV_LINKS.map(({ href, label }) => {
+        {NAV_LINKS.map(({ href, label, botChain }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
+          const solanaOnly = isBotChain && !botChain;
           return (
             <Link
               key={href}
               href={href}
-              className="flex items-center px-3 py-2 text-[13px] font-medium transition-colors"
+              className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] font-medium transition-colors"
               style={{
                 borderRadius: "2px",
                 background: active ? "var(--accent-dim)" : "transparent",
-                color: active ? "var(--accent)" : "var(--text-secondary)",
+                color: active
+                  ? "var(--accent)"
+                  : solanaOnly
+                    ? "var(--text-tertiary)"
+                    : "var(--text-secondary)",
               }}
             >
-              {label}
+              <span>{label}</span>
+              {solanaOnly && (
+                <span
+                  className="text-[9px] font-mono tracking-[0.06em] uppercase px-1 py-0.5"
+                  style={{
+                    border: "1px solid var(--border-default)",
+                    borderRadius: "2px",
+                    color: "var(--text-tertiary)",
+                  }}
+                  title="Solana only. BOT Chain support is being added."
+                >
+                  SOL
+                </span>
+              )}
             </Link>
           );
         })}
@@ -99,7 +126,7 @@ export default function Sidebar() {
       >
         <UmbraStatusBadge />
         <div className="px-4">
-          <ConnectButton />
+          <WalletControl />
         </div>
       </div>
     </aside>
