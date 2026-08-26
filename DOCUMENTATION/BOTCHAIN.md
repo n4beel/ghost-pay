@@ -279,7 +279,7 @@ Use `@noble/curves` v2 directly (`secp256k1.Point`, `Point.fromBytes`, `.multipl
 `.toBytes`) plus viem's `keccak256`. ScopeLift's `stealth-address-sdk` is worth reading as reference
 but makes assumptions about which chains exist.
 
-**Deriving keys from an EVM wallet.** Bo Wallet will not hand you two keypairs. The Umbra Cash
+**Deriving keys from an EVM wallet.** No EVM wallet hands you two keypairs. The Umbra Cash
 pattern: user signs a fixed message once, hash the signature into a seed, derive
 `p_spend = keccak256(seed ‖ "spend")` and `p_view = keccak256(seed ‖ "view")`, each reduced mod n
 with a zero check. Deterministic, recoverable on any device, nothing to store. Mirrors the existing
@@ -289,18 +289,15 @@ with a zero check. Deterministic, recoverable on any device, nothing to store. M
 
 ## Landmines
 
-**MPC signing may not be deterministic.** *Unresolved and load-bearing.* Bo Wallet supports MPC
-accounts. Signature-derived keys assume signing the same message twice returns the same bytes, which
-holds for RFC-6979 signers but is not guaranteed for threshold schemes. If it does not hold, users
-get different stealth keys every session and lose their funds. **Test this before writing P2:**
-connect an MPC Bo Wallet account, sign the same message twice, compare bytes. Fallback is derive
-once, encrypt under a wallet-derived secret, persist — and then a key export flow becomes mandatory,
-because mobile webview storage is cleared more aggressively than desktop browser storage.
+**Bo Wallet cannot be used. Settled.** Confirmed with BOT Chain: no browser extension and no
+in-app dApp browser, so there is no way for a web page to reach it. MetaMask is the wallet for this
+path, and the listing's "native wallet" requirement now rests entirely on BOT Chain accepting
+MetaMask-with-BOT-Chain-added — the one open question that can still invalidate the integration.
 
-**Bo Wallet is mobile only.** iOS and Android app, no browser extension, so no `window.ethereum` on
-desktop. Hence both connectors in `EvmProvider`: `injected()` covers MetaMask on desktop and Bo
-Wallet's in-app dApp browser; `walletConnect()` covers phone-to-desktop pairing. Which of the two Bo
-Wallet actually supports is still unknown — install it and find out.
+This closes the MPC question with it. MetaMask signs per RFC-6979, so signature-derived keys are
+deterministic by construction. `assertDeterministicDerivation` and the persisted meta-address check
+both stay: they cost one extra signature, they are the difference between an error and someone
+losing funds, and whatever wallet BOT Chain ships next is not required to be deterministic.
 
 **Ghost Pay has no mobile layout.** Four responsive breakpoint usages in the whole frontend, two of
 them in `Button.tsx`. `PageShell` is `flex h-screen overflow-hidden` with a fixed 220px sidebar and
@@ -343,14 +340,23 @@ then touch 677.
 
 ## Open questions for BOT Chain
 
-1. Does Bo Wallet have a dApp browser, WalletConnect support, or both?
-2. Is Bo Wallet's MPC signing deterministic?
-3. Can they fund a reviewer wallet with mainnet BOT? There is no mainnet faucet, so a reviewer who
+1. **Does MetaMask with BOT Chain added satisfy the "native wallet" requirement?** This is the one
+   that matters. Bo Wallet has no extension and no dApp browser, so no web application can connect
+   it — meaning either MetaMask counts, or the listing requirement cannot be met by a web app at
+   all. Ask before the mainnet deploy, not after.
+2. Can they fund a reviewer wallet with mainnet BOT? There is no mainnet faucet, so a reviewer who
    cannot get BOT fails our integration for reasons unrelated to our code.
-4. BotScan verifier URL and API key for `forge verify-contract`. Not in the public docs. Unverified
+3. BotScan verifier URL and API key for `forge verify-contract`. Not in the public docs. Unverified
    bytecode behind a privacy app is a bad look for a listing review.
-5. Does MetaMask-with-BOT-Chain-added count as "native wallet" for the listing check, if Bo Wallet
-   turns out to be unreachable from a web dApp?
+4. Does any BOT Chain RPC implement `eth_newFilter`? Bohr's does not, so live payment updates fall
+   back to polling on Rescan. Workable, but worth knowing whether mainnet differs.
+
+### Answered
+
+- **Does Bo Wallet have a dApp browser or WalletConnect?** Neither. It cannot be reached from a web
+  page.
+- **Is Bo Wallet's MPC signing deterministic?** Moot — see above.
+- **BOT decimals?** 18, confirmed from `eth_getBalance`.
 
 ---
 
@@ -363,6 +369,6 @@ npm run dev
 ```
 
 WalletConnect project ID is free from https://dashboard.reown.com. Without it the app falls back to
-injected wallets only and the Bo Wallet pairing path cannot be tested.
+injected wallets only, which loses the QR path to MetaMask on a phone.
 
 Contract deploy steps are in `contracts/README.md`. Testnet first, always.

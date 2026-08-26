@@ -106,8 +106,9 @@ export function StealthProvider({ children }: { children: React.ReactNode }) {
       // Two signatures of the same message, compared before either is trusted.
       //
       // Signature-derived keys assume the wallet signs deterministically. RFC-6979 signers do; MPC
-      // and threshold signers are not obliged to, and BOT Chain's own Bo Wallet offers MPC
-      // accounts. A wallet that randomises this gives the user a different identity every session
+      // and threshold signers are not obliged to. MetaMask is RFC-6979, so this holds today; the
+      // check stays because it costs one signature and the alternative failure is silent.
+      // A wallet that randomises this gives the user a different identity every session
       // and strands everything paid to the previous one.
       const first = await signMessageAsync({ message: STEALTH_KEY_MESSAGE });
       const second = await signMessageAsync({ message: STEALTH_KEY_MESSAGE });
