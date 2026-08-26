@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import WalletProvider from "@/components/providers/WalletProvider";
 import { ChainProvider } from "@/components/providers/ChainProvider";
 import { EvmProvider } from "@/components/providers/EvmProvider";
+import { StealthProvider } from "@/components/providers/StealthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -50,7 +51,9 @@ export default function RootLayout({
       <body className="min-h-full antialiased">
         <ChainProvider>
           <EvmProvider>
-            <WalletProvider>{children}</WalletProvider>
+            <StealthProvider>
+              <WalletProvider>{children}</WalletProvider>
+            </StealthProvider>
           </EvmProvider>
         </ChainProvider>
         <Analytics />

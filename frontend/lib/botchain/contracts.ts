@@ -53,11 +53,20 @@ export function getDeployment(chainId: BotChainId): Deployment {
   return DEPLOYMENTS[chainId];
 }
 
-/** True when every address for this chain is configured. Gate the UI on this. */
+/**
+ * True when this chain's deployment is fully configured. Gate the UI on this.
+ *
+ * The deploy block counts. Without it the announcement scanner has no start point, and walking a
+ * chain with ~0.75s blocks from genesis is not a slow scan, it is a hung tab — so a deployment
+ * missing its block is not usable and must not present as ready.
+ */
 export function isDeployed(chainId: BotChainId): boolean {
   const d = DEPLOYMENTS[chainId];
   return (
-    d.announcer !== ZERO && d.registry !== ZERO && d.stealthSend !== ZERO
+    d.announcer !== ZERO &&
+    d.registry !== ZERO &&
+    d.stealthSend !== ZERO &&
+    d.deployBlock > 0n
   );
 }
 

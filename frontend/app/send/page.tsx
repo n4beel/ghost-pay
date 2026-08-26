@@ -21,12 +21,38 @@ import NotConnectedView from "@/components/ui/NotConnectedView";
 import { magicBlockTransfer } from "@/lib/magicblock/client";
 import { trackEvent } from "@/lib/torque/events";
 import { logActivity } from "@/lib/activity-log";
+import { useChain } from "@/components/providers/ChainProvider";
+import BotChainGate from "@/components/botchain/BotChainGate";
+import StealthSendForm from "@/components/botchain/StealthSendForm";
 
 type Route = "umbra" | "magicblock";
 type Source = "public" | "vault";
 type SendStage = "idle" | "proving" | "broadcasting" | "done" | "error";
 
 export default function SendPage() {
+  const { isBotChain } = useChain();
+
+  // Branch once at the top rather than threading a common wallet interface through the form. The
+  // two chains share the visual language and nothing else: different wallets, different privacy
+  // model, different failure modes.
+  if (isBotChain) return <BotChainSendPage />;
+  return <SolanaSendPage />;
+}
+
+function BotChainSendPage() {
+  return (
+    <PageShell
+      title="Send"
+      description="Stealth payment — a one-time address only the recipient can spend from"
+    >
+      <BotChainGate>
+        <StealthSendForm />
+      </BotChainGate>
+    </PageShell>
+  );
+}
+
+function SolanaSendPage() {
   const { connected, publicKey, signMessage } = useWallet();
   const { client, isReady } = useUmbra();
   const { toast } = useToast();

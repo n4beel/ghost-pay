@@ -107,9 +107,42 @@ Test setup is vitest: `npm test`, `npm run test:watch`, `npm run typecheck`. `ne
 `NEXT_PUBLIC_RPC_ENDPOINT` set (the Solana connection is constructed at build time), so run it with
 a populated `.env.local`.
 
-### Next — P3, send and receive UI
+### Done — P3, send and receive UI
 
-Then P4 (mobile), P5 (gating, banner, landing), P6 (verify, mainnet cutover).
+- `lib/botchain/registry.ts` — ERC-6538 lookup and registration, treating anything read out of the
+  registry as untrusted until it decodes.
+- `lib/botchain/amount.ts` — native-amount parsing that rejects what `parseEther` would silently
+  coerce (exponents, signs, >18 decimals).
+- `StealthProvider` — derives the identity from a signature and holds it in memory only.
+- `useStealthPayments` — history scan plus a live watcher, with per-address balances so "claimed"
+  reflects the chain rather than local bookkeeping.
+- `BotChainGate` — the four preconditions (connected, right network, deployed, funded) in one place.
+- `StealthSendForm`, `StealthReceivePanel` — the send and receive flows.
+- `/send` and `/receive` branch on `useChain()` at the top. The Solana components are untouched.
+
+**Two determinism guards, not one.** The receive flow signs the message twice and compares, which
+catches a signer that randomises per call. It also stores the derived *meta-address* (public, and
+published to the registry anyway) per account and compares on every later unlock, which catches a
+signer that is stable within a session but drifts across them. The first check alone would pass a
+wallet that loses the user their funds a day later.
+
+**Smoke test.** `npm run smoke:botchain` drives the real app in Chromium against a mock EIP-1193
+wallet and a mock JSON-RPC node — connect, gate, resolve a recipient, unlock, scan — with no
+extension, no funded key and no deployment. `NONDETERMINISTIC=1 npm run smoke:botchain` makes the
+mock wallet sign the same message two different ways and asserts the app refuses to derive an
+identity. Needs `npm i -D playwright`, deliberately not a dependency. See the header of
+`scripts/drive-botchain.mjs` for the `.env.local` it expects.
+
+It is not a substitute for MetaMask against a real Bohr deployment. It is what catches the
+breakages you would otherwise only find while holding a phone.
+
+### Next — P4, mobile
+
+Then P5 (gating, banner, landing), P6 (verify, mainnet cutover).
+
+`/dashboard` and `/history` are marked as BOT Chain pages in the sidebar but still render their
+Solana views. Either give them a BOT Chain branch or flag them `SOL` — right now the nav overstates
+what works.
 
 ---
 
@@ -180,6 +213,8 @@ then touch 677.
   user derives different keys, with no error and no way back to the funds at the old ones.
 - The conventions in `lib/stealth/crypto.ts` are pinned by `__tests__/reference.test.ts` and
   `__tests__/vectors.ts`. If those fail, do not update the expectations — find out which side moved.
+- `isDeployed()` requires a non-zero deploy block as well as the three addresses. Without it the
+  scanner has no start point, and walking ~0.75s blocks from genesis is a hung tab, not a slow scan.
 - With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, `WalletControl` renders exactly the old
   `ConnectButton` — no switcher, no behavioural change. Ghost Pay is live; the second chain stays
   invisible in production until P6 passes.
