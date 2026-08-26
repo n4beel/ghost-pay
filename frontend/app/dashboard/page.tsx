@@ -141,7 +141,7 @@ export default function DashboardPage() {
       <RegistrationBanner state={registrationState} onRegister={register} />
 
       {/* Balance cards */}
-      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "1fr 1fr" }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Private Balance */}
         <Panel>
           <div className="flex items-center justify-between mb-4">
@@ -278,7 +278,7 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <Panel noPadding>
         <div
-          className="px-5 py-4 flex items-center justify-between"
+          className="px-4 sm:px-5 py-4 flex items-center justify-between gap-3"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
@@ -308,24 +308,26 @@ export default function DashboardPage() {
             return (
               <div
                 key={i}
-                className="flex items-center gap-4 px-5 py-3"
+                className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                 style={{
                   borderBottom: i < localActivity.length - 1 ? "1px solid var(--border-subtle)" : "none",
                 }}
               >
-                <span className="font-mono text-sm w-4 text-center" style={{ color: "var(--text-tertiary)" }}>
+                <span className="font-mono text-sm w-4 text-center flex-shrink-0" style={{ color: "var(--text-tertiary)" }}>
                   {arrow}
                 </span>
-                <span className="flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
+                <span className="flex-1 min-w-0 truncate text-[13px]" style={{ color: "var(--text-primary)" }}>
                   {label[a.type]}
                 </span>
-                <span className="font-mono text-[12px]" style={{ color: "var(--text-secondary)" }}>
+                <span className="font-mono text-[12px] flex-shrink-0" style={{ color: "var(--text-secondary)" }}>
                   {a.amount}
                 </span>
                 <Badge variant={a.type === "send" || a.type === "send_vault" || a.type === "claim" ? "private" : "confirmed"}>
                   {a.token}
                 </Badge>
-                <span className="text-[11px] w-16 text-right" style={{ color: "var(--text-tertiary)" }}>
+                {/* Five columns will not fit a phone. The timestamp is the one nobody scans a list
+                    for, so it is the one that goes. */}
+                <span className="hidden sm:block text-[11px] w-16 text-right flex-shrink-0" style={{ color: "var(--text-tertiary)" }}>
                   {timeAgo(a.timestamp)}
                 </span>
               </div>

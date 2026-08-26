@@ -136,13 +136,37 @@ identity. Needs `npm i -D playwright`, deliberately not a dependency. See the he
 It is not a substitute for MetaMask against a real Bohr deployment. It is what catches the
 breakages you would otherwise only find while holding a phone.
 
-### Next — P4, mobile
+### Done — P4, mobile
 
-Then P5 (gating, banner, landing), P6 (verify, mainnet cutover).
+The app had four responsive breakpoint usages before this, two of them in `Button.tsx`. It now
+works from 320px up.
 
-`/dashboard` and `/history` are marked as BOT Chain pages in the sidebar but still render their
-Solana views. Either give them a BOT Chain branch or flag them `SOL` — right now the nav overstates
-what works.
+- `PageShell` — the 220px rail collapses below `md` into a Radix Dialog drawer behind a top bar.
+  Radix rather than a hand-rolled panel, for the focus trap, escape handling and scroll lock.
+- Height is `100dvh`, not `100vh`. On mobile Safari and Chrome `100vh` is the viewport with the
+  browser chrome retracted, so an `h-screen` layout with `overflow-hidden` hides its own footer
+  under the address bar with no way to scroll to it.
+- Touch targets are raised to 44px under `@media (pointer: coarse)` — matching the input device
+  rather than the screen width, so the deliberate desktop density survives a small laptop window.
+  Inputs go to 16px there too: anything smaller makes iOS Safari zoom on focus and never zoom back.
+- Landing page, dashboard cards, and every list row are responsive. `html, body` have
+  `overflow-x: hidden` so one long hash can never drag the layout sideways.
+
+**The check that matters.** `npm run smoke:botchain:mobile` runs the whole flow at 390x844 and
+asserts, on every page it visits, that `scrollWidth <= innerWidth` — naming the widest offending
+element when it is not. Horizontal overflow is the entire class of mobile layout bug, it is
+invisible in a screenshot taken at the width that caused it, and this catches it in one assertion.
+Verified clean at 320, 360, 390, 414 and 768px.
+
+The drawer is also asserted to close on navigation, and the desktop pass still runs unchanged.
+
+### Next — P5, gating, banner, landing
+
+Then P6 (verify, mainnet cutover).
+
+**Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
+the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
+`SOL`; right now the nav overstates what works.
 
 ---
 

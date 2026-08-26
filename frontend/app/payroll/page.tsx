@@ -216,7 +216,7 @@ export default function PayrollPage() {
           {rows.length > 0 && !results && (
             <Panel noPadding>
               <div
-                className="px-5 py-4 flex items-center justify-between"
+                className="px-4 sm:px-5 py-4 flex items-center justify-between gap-3"
                 style={{ borderBottom: "1px solid var(--border-subtle)" }}
               >
                 <div>
@@ -241,7 +241,7 @@ export default function PayrollPage() {
               {rows.map((row, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 px-5 py-3"
+                  className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                   style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none" }}
                 >
                   <div className="flex-1 min-w-0">
@@ -280,7 +280,7 @@ export default function PayrollPage() {
               {results.map((result, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 px-5 py-3"
+                  className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                   style={{ borderBottom: i < results.length - 1 ? "1px solid var(--border-subtle)" : "none" }}
                 >
                   <div className="flex-1 min-w-0">

@@ -146,7 +146,7 @@ export default function CompliancePage() {
                 return (
                   <div
                     key={key}
-                    className="flex items-center gap-4 px-5 py-3"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                     style={{
                       borderBottom: i < grants.length - 1 ? "1px solid var(--border-subtle)" : "none",
                     }}
