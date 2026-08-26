@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import WalletProvider from "@/components/providers/WalletProvider";
+import { ChainProvider } from "@/components/providers/ChainProvider";
+import { EvmProvider } from "@/components/providers/EvmProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,9 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ghost Pay — Private Payments on Solana",
+  title: "Ghost Pay - Private Payments on Solana and BOT Chain",
   description:
-    "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy.",
+    "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy, and stealth address payments on BOT Chain.",
   icons: {
     icon: [
       { url: "/ghost-32.png", sizes: "32x32", type: "image/png" },
@@ -46,7 +48,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <WalletProvider>{children}</WalletProvider>
+        <ChainProvider>
+          <EvmProvider>
+            <WalletProvider>{children}</WalletProvider>
+          </EvmProvider>
+        </ChainProvider>
         <Analytics />
       </body>
     </html>
