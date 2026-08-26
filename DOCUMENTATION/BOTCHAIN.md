@@ -47,8 +47,9 @@ EVM L1, ~0.75s blocks. Docs at `https://dev-docs.botchain.ai` (the `json-rpc-end
 redirect-loops; the quick-guide page works). Toolchain support confirmed for Remix, Hardhat, Foundry,
 ethers.js, web3.js. TheGraph and Covalent are listed as ecosystem indexers.
 
-Decimals are assumed to be the EVM default of 18. Nothing in the docs states it. Confirm against a
-real balance before mainnet.
+Decimals are 18, confirmed against the node rather than assumed — a 10 tBOT faucet balance reads
+as `10000000000000000000` from `eth_getBalance`. Nothing in BOT Chain's docs states it, so do not
+let the comment in `chain.ts` drift back to a guess.
 
 ---
 
@@ -189,6 +190,35 @@ is a claim two minutes on an explorer disproves.
 **Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
 the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
 `SOL`; right now the nav overstates what works.
+
+---
+
+## Deployments
+
+### Bohr testnet (968) — 2026-08-26
+
+| Contract | Address |
+|---|---|
+| `ERC5564Announcer` | `0x6212BB579339F6523FCC100F49e1136922a3f3Ce` |
+| `ERC6538Registry` | `0x8d1B71628BBC0EDD95b652674BB0F81DeB6Cf767` |
+| `GhostPayStealthSend` | `0xD4F25c861905DBe99f40A1361C167b404f4000A2` |
+| Scan from block | `21243953` |
+
+Deployed in blocks 21243965–21243966; the scan start is deliberately earlier. The script reads
+`block.number` during simulation, before the transactions are mined, so the printed value is always
+behind the real one. Early is the safe direction — a start block *after* the first announcement
+would silently hide payments, whereas a few blocks early costs nine seconds of scanning on a
+0.75s chain.
+
+Deployment cost 0.0222 BOT at 20 gwei, 1,111,164 gas across the three.
+
+The deployer holds no privileges afterwards: none of the three contracts has an owner, an admin
+function, `selfdestruct` or `delegatecall`, and `GhostPayStealthSend` holds its announcer in an
+`immutable`. The key is spent the moment the transaction lands.
+
+### BOT Chain mainnet (677)
+
+Not deployed. See P6.
 
 ---
 
