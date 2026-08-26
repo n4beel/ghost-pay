@@ -34,5 +34,14 @@ contract Deploy is Script {
     console2.log("NEXT_PUBLIC_ANNOUNCER_%s=%s", vm.toString(block.chainid), vm.toString(address(announcer)));
     console2.log("NEXT_PUBLIC_REGISTRY_%s=%s", vm.toString(block.chainid), vm.toString(address(registry)));
     console2.log("NEXT_PUBLIC_STEALTH_SEND_%s=%s", vm.toString(block.chainid), vm.toString(address(stealthSend)));
+    // The scanner starts here instead of at genesis. Without it the frontend treats the deployment
+    // as unconfigured, because walking a chain with ~0.75s blocks from block zero is a hung tab
+    // rather than a slow scan. One block earlier than the deployment, so a reorg or an
+    // off-by-one at the boundary cannot drop the first announcement.
+    console2.log(
+      "NEXT_PUBLIC_DEPLOY_BLOCK_%s=%s",
+      vm.toString(block.chainid),
+      vm.toString(block.number > 0 ? block.number - 1 : 0)
+    );
   }
 }

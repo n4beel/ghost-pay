@@ -37,6 +37,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = process.env.APP_URL ?? "http://localhost:3000";
 const SHOT = process.env.SHOT_DIR;
 const DETERMINISTIC = process.env.NONDETERMINISTIC !== "1";
+/** `VIEWPORT=mobile` runs the same steps at phone size and adds the mobile-only assertions. */
+const MOBILE = process.env.VIEWPORT === "mobile";
+/**
+ * `FLAG_OFF=1` asserts the opposite of everything else here: that with
+ * NEXT_PUBLIC_BOTCHAIN_ENABLED unset or false, the BOT Chain path is completely unreachable — even
+ * for a browser that already has "botchain" persisted from a preview build. Run it against a dev
+ * server started with the flag off.
+ */
+const FLAG_OFF = process.env.FLAG_OFF === "1";
+const VIEWPORT = MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 900 };
 const ACCOUNT = "0x9f2C4bE0aB1c9E0d1234567890AbCdEf12345678";
 
 /** First vector from lib/stealth/__tests__/vectors.ts — a known-valid scheme-1 meta-address. */
@@ -163,7 +173,10 @@ async function main() {
   process.on("exit", stopRpc);
 
   const browser = await chromium.launch({ executablePath: findChromium() });
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({
+    viewport: VIEWPORT,
+    ...(MOBILE ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3 } : {}),
+  });
   await ctx.addInitScript(injectWallet, { account: ACCOUNT, deterministic: DETERMINISTIC });
   await ctx.addInitScript(() => localStorage.setItem("ghost-pay:active-chain", "botchain"));
 
@@ -187,7 +200,78 @@ async function main() {
     }
   };
 
-  console.log(`\nBOT Chain smoke test (wallet signs deterministically: ${DETERMINISTIC})\n`);
+  /**
+   * Nothing may scroll the page sideways.
+   *
+   * One overflowing address or hash shifts the whole layout, and it is invisible in a screenshot
+   * taken at the width that caused it. Asserting the document is no wider than the viewport catches
+   * the entire class in one line, on every screen the test visits.
+   */
+  const assertNoSidewaysScroll = async (where) => {
+    const overflow = await page.evaluate(() => {
+      const doc = document.documentElement;
+      const over = doc.scrollWidth - window.innerWidth;
+      if (over <= 1) return null;
+      // Name the widest offender, so a failure points at a element rather than a number.
+      let worst = null;
+      for (const el of document.querySelectorAll("*")) {
+        const right = el.getBoundingClientRect().right;
+        if (right > window.innerWidth + 1 && (!worst || right > worst.right)) {
+          worst = { right, tag: el.tagName.toLowerCase(), cls: (el.className || "").toString().slice(0, 80) };
+        }
+      }
+      return { over, worst };
+    });
+    if (overflow) {
+      const { over, worst } = overflow;
+      throw new Error(
+        `page scrolls sideways by ${over}px on ${where}` +
+          (worst ? ` — widest: <${worst.tag} class="${worst.cls}">` : ""),
+      );
+    }
+  };
+
+  console.log(
+    `\nBOT Chain smoke test (${MOBILE ? `mobile ${VIEWPORT.width}x${VIEWPORT.height}` : "desktop"}` +
+      `${FLAG_OFF ? ", flag OFF" : `, wallet signs deterministically: ${DETERMINISTIC}`})\n`,
+  );
+
+  if (FLAG_OFF) {
+    // localStorage was seeded with "botchain" by the init script above, which is exactly the state
+    // a preview-build visitor arrives in.
+    await page.goto(`${APP}/send`, { waitUntil: "networkidle" });
+
+    await step("send page falls back to Solana", () =>
+      page.getByText(/amounts hidden, sender anonymous/i).waitFor({ timeout: 20000 }),
+    );
+    await step("no chain switcher", async () => {
+      if (await page.getByRole("group", { name: /select network/i }).isVisible().catch(() => false)) {
+        throw new Error("the chain switcher is reachable with the flag off");
+      }
+    });
+    await step("the stored selection is cleared, not just ignored", async () => {
+      const stored = await page.evaluate(() => localStorage.getItem("ghost-pay:active-chain"));
+      if (stored !== "solana") throw new Error(`stored chain is still ${stored}`);
+    });
+    await step("receive page falls back to Solana", async () => {
+      await page.goto(`${APP}/receive`, { waitUntil: "networkidle" });
+      await page.getByText(/Share your payment address/i).waitFor({ timeout: 20000 });
+    });
+    await step("landing page does not advertise BOT Chain", async () => {
+      await page.goto(`${APP}/`, { waitUntil: "networkidle" });
+      if (await page.getByText(/Also on BOT Chain/i).isVisible().catch(() => false)) {
+        throw new Error("the BOT Chain landing section renders with the flag off");
+      }
+      const title = await page.title();
+      if (/BOT Chain/i.test(title)) throw new Error(`page title advertises BOT Chain: ${title}`);
+    });
+
+    console.log("\n  no page errors");
+    await browser.close();
+    stopRpc();
+    console.log("\nAll steps passed.\n");
+    process.exit(0);
+  }
 
   try {
     await page.goto(`${APP}/send`, { waitUntil: "networkidle" });
@@ -198,11 +282,25 @@ async function main() {
     await step("gate blocks before a wallet is connected", () =>
       page.getByText("Wallet not connected").waitFor({ timeout: 10000 }),
     );
+    if (MOBILE) {
+      await step("no sidebar rail on a phone", async () => {
+        const rail = page.locator("aside").first();
+        if (await rail.isVisible().catch(() => false)) {
+          throw new Error("the 220px sidebar is still taking content width");
+        }
+        await page.getByRole("button", { name: /open navigation/i }).waitFor({ timeout: 10000 });
+      });
+      await step("send page does not scroll sideways", () => assertNoSidewaysScroll("/send"));
+    }
+
     await step("wallet connects", async () => {
-      await page.getByRole("button", { name: /connect wallet/i }).first().click();
+      // On a phone the wallet control lives in the drawer, so the drawer is the path to it.
+      if (MOBILE) await page.getByRole("button", { name: /open navigation/i }).click();
+      await page.getByRole("button", { name: /connect wallet/i }).last().click();
       const item = page.getByText("MetaMask", { exact: true });
       if (await item.isVisible().catch(() => false)) await item.click();
-      await page.getByText("0x9f2C...5678").waitFor({ timeout: 20000 });
+      await page.getByText("0x9f2C...5678").last().waitFor({ timeout: 20000 });
+      if (MOBILE) await page.keyboard.press("Escape");
     });
     await step("send form renders once connected", async () => {
       await page.getByPlaceholder(/meta-address/i).waitFor({ timeout: 15000 });
@@ -230,6 +328,11 @@ async function main() {
       await button.waitFor();
       if (await button.isDisabled()) throw new Error("send button is still disabled");
     });
+    if (MOBILE) {
+      await step("filled send form does not scroll sideways", () =>
+        assertNoSidewaysScroll("/send with a meta-address filled in"),
+      );
+    }
     if (SHOT) await page.screenshot({ path: `${SHOT}/send.png`, fullPage: true });
 
     await page.goto(`${APP}/receive`, { waitUntil: "networkidle" });
@@ -262,7 +365,30 @@ async function main() {
         page.getByText(/No payments found yet/i).waitFor({ timeout: 25000 }),
       );
     }
+    if (MOBILE) {
+      // The meta-address is 132 hex characters on one line. If anything breaks a phone layout, it
+      // is this.
+      await step("receive page does not scroll sideways", () => assertNoSidewaysScroll("/receive"));
+    }
     if (SHOT) await page.screenshot({ path: `${SHOT}/receive.png`, fullPage: true });
+
+    if (MOBILE) {
+      await step("drawer navigates and closes", async () => {
+        await page.getByRole("button", { name: /open navigation/i }).click();
+        await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+        await page.waitForURL(/\/dashboard$/, { timeout: 15000 });
+        await page.getByRole("button", { name: /open navigation/i }).waitFor({ timeout: 10000 });
+        if (await page.locator('[role="dialog"]').isVisible().catch(() => false)) {
+          throw new Error("drawer stayed open after navigating");
+        }
+      });
+      await step("no page scrolls sideways", async () => {
+        for (const path of ["/", "/dashboard", "/history", "/payroll", "/compliance", "/rewards"]) {
+          await page.goto(`${APP}${path}`, { waitUntil: "networkidle" });
+          await assertNoSidewaysScroll(path);
+        }
+      });
+    }
 
     await step("Solana path is untouched", async () => {
       const other = await ctx.newPage();

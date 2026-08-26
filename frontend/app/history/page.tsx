@@ -72,7 +72,7 @@ export default function HistoryPage() {
           {/* Local activity log */}
           <Panel noPadding>
             <div
-              className="px-5 py-3 flex items-center justify-between"
+              className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3"
               style={{ borderBottom: "1px solid var(--border-subtle)" }}
             >
               <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
@@ -93,24 +93,24 @@ export default function HistoryPage() {
               localActivities.map((a, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 px-5 py-3 transition-colors"
+                  className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 transition-colors"
                   style={{
                     borderBottom:
                       i < localActivities.length - 1 ? "1px solid var(--border-subtle)" : "none",
                   }}
                 >
-                  <span className="font-mono text-sm w-4 text-center" style={{ color: "var(--text-tertiary)" }}>
+                  <span className="font-mono text-sm w-4 text-center flex-shrink-0" style={{ color: "var(--text-tertiary)" }}>
                     {typeArrow[a.type]}
                   </span>
-                  <span className="flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
+                  <span className="flex-1 min-w-0 truncate text-[13px]" style={{ color: "var(--text-primary)" }}>
                     {typeLabel[a.type]}
                   </span>
-                  <span className="font-mono text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                  <span className="font-mono text-[13px] flex-shrink-0" style={{ color: "var(--text-secondary)" }}>
                     {a.amount}
                   </span>
                   <Badge variant={typeBadge[a.type]}>{a.token}</Badge>
                   <span
-                    className="text-[11px] w-16 text-right"
+                    className="hidden sm:block text-[11px] w-16 text-right flex-shrink-0"
                     style={{ color: "var(--text-tertiary)" }}
                   >
                     {timeAgo(a.timestamp)}
@@ -123,7 +123,7 @@ export default function HistoryPage() {
           {/* On-chain activity from Dune SIM */}
           <Panel noPadding>
             <div
-              className="px-5 py-3 flex items-center justify-between"
+              className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3"
               style={{ borderBottom: "1px solid var(--border-subtle)" }}
             >
               <p className="text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
@@ -139,7 +139,7 @@ export default function HistoryPage() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-4 px-5 py-3"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                     style={{ borderBottom: "1px solid var(--border-subtle)" }}
                   >
                     <div className="w-4 h-4 skeleton rounded" />
@@ -158,24 +158,24 @@ export default function HistoryPage() {
               duneActivities.map((a, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 px-5 py-3 transition-colors"
+                  className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 transition-colors"
                   style={{
                     borderBottom:
                       i < duneActivities.length - 1 ? "1px solid var(--border-subtle)" : "none",
                   }}
                 >
-                  <span className="font-mono text-sm w-4 text-center" style={{ color: "var(--text-tertiary)" }}>
+                  <span className="font-mono text-sm w-4 text-center flex-shrink-0" style={{ color: "var(--text-tertiary)" }}>
                     {typeArrow[a.type]}
                   </span>
-                  <span className="flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
+                  <span className="flex-1 min-w-0 truncate text-[13px]" style={{ color: "var(--text-primary)" }}>
                     {typeLabel[a.type]}
                   </span>
-                  <span className="font-mono text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                  <span className="font-mono text-[13px] flex-shrink-0" style={{ color: "var(--text-secondary)" }}>
                     {a.amount ?? "[Private]"}
                   </span>
                   <Badge variant={typeBadge[a.type]}>{a.token}</Badge>
                   <span
-                    className="text-[11px] w-16 text-right"
+                    className="hidden sm:block text-[11px] w-16 text-right flex-shrink-0"
                     style={{ color: "var(--text-tertiary)" }}
                   >
                     {timeAgo(a.timestamp)}

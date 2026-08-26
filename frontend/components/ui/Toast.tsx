@@ -75,7 +75,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             </RadixToast.Close>
           </RadixToast.Root>
         ))}
-        <RadixToast.Viewport className="fixed bottom-6 right-6 flex flex-col gap-2 w-80 z-50" />
+        {/* Full width minus a gutter on a phone; a fixed column once there is room. w-80 alone
+            overflows a 320px screen and drags the page sideways. */}
+        <RadixToast.Viewport className="fixed bottom-4 right-4 left-4 sm:left-auto sm:bottom-6 sm:right-6 flex flex-col gap-2 sm:w-80 z-50" />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

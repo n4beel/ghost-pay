@@ -136,13 +136,59 @@ identity. Needs `npm i -D playwright`, deliberately not a dependency. See the he
 It is not a substitute for MetaMask against a real Bohr deployment. It is what catches the
 breakages you would otherwise only find while holding a phone.
 
-### Next — P4, mobile
+### Done — P4, mobile
 
-Then P5 (gating, banner, landing), P6 (verify, mainnet cutover).
+The app had four responsive breakpoint usages before this, two of them in `Button.tsx`. It now
+works from 320px up.
 
-`/dashboard` and `/history` are marked as BOT Chain pages in the sidebar but still render their
-Solana views. Either give them a BOT Chain branch or flag them `SOL` — right now the nav overstates
-what works.
+- `PageShell` — the 220px rail collapses below `md` into a Radix Dialog drawer behind a top bar.
+  Radix rather than a hand-rolled panel, for the focus trap, escape handling and scroll lock.
+- Height is `100dvh`, not `100vh`. On mobile Safari and Chrome `100vh` is the viewport with the
+  browser chrome retracted, so an `h-screen` layout with `overflow-hidden` hides its own footer
+  under the address bar with no way to scroll to it.
+- Touch targets are raised to 44px under `@media (pointer: coarse)` — matching the input device
+  rather than the screen width, so the deliberate desktop density survives a small laptop window.
+  Inputs go to 16px there too: anything smaller makes iOS Safari zoom on focus and never zoom back.
+- Landing page, dashboard cards, and every list row are responsive. `html, body` have
+  `overflow-x: hidden` so one long hash can never drag the layout sideways.
+
+**The check that matters.** `npm run smoke:botchain:mobile` runs the whole flow at 390x844 and
+asserts, on every page it visits, that `scrollWidth <= innerWidth` — naming the widest offending
+element when it is not. Horizontal overflow is the entire class of mobile layout bug, it is
+invisible in a screenshot taken at the width that caused it, and this catches it in one assertion.
+Verified clean at 320, 360, 390, 414 and 768px.
+
+The drawer is also asserted to close on navigation, and the desktop pass still runs unchanged.
+
+### Done — P5, gating, banner, landing
+
+**The flag is now the only thing that decides.** It was not before. `WalletControl` checked it, but
+`isBotChain` came straight from persisted state, so a browser holding `botchain` from a preview
+build would have had `/send`, `/receive` and the sidebar rendering BOT Chain views behind a Solana
+wallet control — a state neither chain works in. `lib/botchain/gate.ts` now owns the decision,
+`ChainProvider` enforces it and rewrites a selection the flag no longer permits, and
+`resolveActiveChain` is unit-tested. `npm run smoke:botchain:flagoff` asserts the whole thing end to
+end against a browser seeded with `botchain`.
+
+The site title and description are gated too. `NEXT_PUBLIC_*` inlines on the server as well, so a
+production build with the flag off never claims a second chain — which matters more here than in the
+UI, because search results and link previews outlive the deploy that produced them.
+
+**`BotChainBanner`** rides with `BotChainGate`, so every BOT Chain screen states two things without
+each page remembering to: which network (Bohr is a testnet, tBOT is worthless, here is the faucet),
+and what stealth addresses actually hide.
+
+**Landing.** A flag-gated section putting the two privacy models side by side — Solana:
+recipient unlinkable, amount encrypted, sender anonymous; BOT Chain: recipient unlinkable, amount
+public, sender public. The differences are stated rather than smoothed over, because a listing
+review is exactly the audience that checks a privacy claim against the chain, and implying parity
+is a claim two minutes on an explorer disproves.
+
+### Next — P6, verify and mainnet cutover
+
+**Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
+the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
+`SOL`; right now the nav overstates what works.
 
 ---
 
@@ -215,9 +261,11 @@ then touch 677.
   `__tests__/vectors.ts`. If those fail, do not update the expectations — find out which side moved.
 - `isDeployed()` requires a non-zero deploy block as well as the three addresses. Without it the
   scanner has no start point, and walking ~0.75s blocks from genesis is a hung tab, not a slow scan.
-- With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, `WalletControl` renders exactly the old
-  `ConnectButton` — no switcher, no behavioural change. Ghost Pay is live; the second chain stays
-  invisible in production until P6 passes.
+- With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, the BOT Chain path does not exist: the
+  wallet control is exactly the old `ConnectButton`, `isBotChain` is forced false, a stored
+  selection is rewritten to `solana`, and neither the landing section nor the page title mentions a
+  second chain. Ghost Pay is live; it stays that way until P6 passes. `lib/botchain/gate.ts` is the
+  single place that decides — do not reintroduce a second read of the flag.
 - Vercel scoping: flag `true` on Preview and Development, `false` (or absent) on Production until
   the cutover.
 

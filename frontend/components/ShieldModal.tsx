@@ -82,9 +82,12 @@ export default function ShieldModal({ client, onSuccess, trigger }: ShieldModalP
           style={{ background: "rgba(0,0,0,0.7)" }}
         />
         <Dialog.Content
-          className="fixed z-50 top-1/2 left-1/2 w-full max-w-md p-6 focus:outline-none"
+          // w-full puts the panel flush against both screen edges on a phone, and a form taller
+          // than the viewport has nowhere to go without its own scroll.
+          className="fixed z-50 top-1/2 left-1/2 w-[calc(100vw-2rem)] max-w-md p-5 sm:p-6 overflow-y-auto focus:outline-none"
           style={{
             transform: "translate(-50%, -50%)",
+            maxHeight: "calc(100dvh - 2rem)",
             background: "var(--bg-surface)",
             border: "1px solid var(--border-default)",
           }}

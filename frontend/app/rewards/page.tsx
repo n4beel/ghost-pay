@@ -43,7 +43,7 @@ export default function RewardsPage() {
         <div className="flex flex-col gap-4 mx-auto w-full" style={{ maxWidth: "560px" }}>
           <Panel noPadding>
             <div
-              className="px-5 py-3 flex items-center justify-between"
+              className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3"
               style={{ borderBottom: "1px solid var(--border-subtle)" }}
             >
               <div>
@@ -62,7 +62,7 @@ export default function RewardsPage() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-4 px-5 py-3"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3"
                     style={{ borderBottom: "1px solid var(--border-subtle)" }}
                   >
                     <div className="w-5 h-4 skeleton" />
@@ -86,20 +86,20 @@ export default function RewardsPage() {
                 return (
                   <div
                     key={entry.rank}
-                    className="flex items-center gap-4 px-5 py-3 transition-colors"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 transition-colors"
                     style={{
                       background: isCurrentUser ? "var(--accent-dim)" : "transparent",
                       borderBottom: i < leaderboard.length - 1 ? "1px solid var(--border-subtle)" : "none",
                     }}
                   >
                     <span
-                      className="font-mono text-[13px] w-5 text-center"
+                      className="font-mono text-[13px] w-5 text-center flex-shrink-0"
                       style={{ color: entry.rank <= 3 ? "var(--accent)" : "var(--text-tertiary)" }}
                     >
                       #{entry.rank}
                     </span>
                     <span
-                      className="flex-1 font-mono text-[12px]"
+                      className="flex-1 min-w-0 truncate font-mono text-[12px]"
                       style={{ color: "var(--text-secondary)" }}
                     >
                       {entry.address.slice(0, 6)}...{entry.address.slice(-4)}

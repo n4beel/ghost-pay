@@ -85,6 +85,39 @@
   }
 }
 
+/* Touch targets
+ *
+ * The interface is deliberately dense — the design brief asks for a trading-desk feel, not a
+ * consumer app — and at 26px tall a `size="sm"` button is comfortable with a mouse and a coin-flip
+ * with a thumb. `pointer: coarse` matches touch input rather than screen width, so this raises the
+ * hit area exactly where it is needed and leaves mouse density untouched, including on a small
+ * laptop window.
+ *
+ * 44px is Apple's minimum; Android asks for 48dp. Padding rather than height, so a control that is
+ * already large enough is not stretched.
+ */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a.nav-link,
+  select {
+    min-height: 44px;
+  }
+
+  input,
+  textarea {
+    /* Anything under 16px makes iOS Safari zoom the page on focus, and it does not zoom back. */
+    font-size: 16px;
+  }
+}
+
+/* Nothing should be able to scroll the page sideways. A single overflowing address or hash
+ * otherwise shifts the whole layout and there is no obvious culprit. */
+html,
+body {
+  overflow-x: hidden;
+}
+
 /* Selection */
 ::selection {
   background: var(--accent-dim);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import RedactedValue from "@/components/ui/RedactedValue";
+import { BOTCHAIN_ENABLED } from "@/lib/botchain/gate";
 
 const FEATURES = [
   {
@@ -72,6 +73,35 @@ const SDKS = [
   "Palm USD",
 ];
 
+/**
+ * The two privacy models, side by side, with the differences stated rather than smoothed over.
+ *
+ * BOT Chain gets stealth addresses, not the Solana confidential-transfer stack: recipients are
+ * unlinkable, amounts and senders are not. A listing review is exactly the audience that checks a
+ * privacy claim against the chain, so the honest comparison is also the persuasive one — and the
+ * alternative, implying parity, is a claim two minutes on an explorer disproves.
+ */
+const PRIVACY_MODELS = [
+  {
+    chain: "Solana",
+    method: "Umbra ZK · confidential transfers",
+    rows: [
+      { label: "Recipient", value: "Unlinkable", strong: true },
+      { label: "Amount", value: "Encrypted", strong: true },
+      { label: "Sender", value: "Anonymous", strong: true },
+    ],
+  },
+  {
+    chain: "BOT Chain",
+    method: "ERC-5564 stealth addresses · secp256k1",
+    rows: [
+      { label: "Recipient", value: "Unlinkable", strong: true },
+      { label: "Amount", value: "Public", strong: false },
+      { label: "Sender", value: "Public", strong: false },
+    ],
+  },
+];
+
 const CHAIN_VIEW = [
   { label: "Sender", value: "0x????…????" },
   { label: "Recipient", value: "Stealth address" },
@@ -87,14 +117,14 @@ export default function LandingPage() {
     >
       {/* Header */}
       <header
-        className="flex items-center justify-between px-8 py-5"
+        className="flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5 gap-4"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <div className="flex items-center gap-2.5">
           <Image src="/ghost-32.png" alt="Ghost Pay" width={22} height={22} priority />
           <span className="text-[15px] font-semibold tracking-[-0.01em]">Ghost Pay</span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <a
             href="https://github.com/n4beel/ghost-pay"
             target="_blank"
@@ -115,7 +145,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-8 py-28 text-center overflow-hidden">
+      <section className="relative flex flex-col items-center justify-center px-5 sm:px-8 py-16 sm:py-24 lg:py-28 text-center overflow-hidden">
         {/* Glow */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -153,7 +183,7 @@ export default function LandingPage() {
           </div>
 
           <h1
-            className="text-[64px] font-semibold tracking-[-0.04em] leading-[1.04] mb-6"
+            className="text-[38px] sm:text-[52px] lg:text-[64px] font-semibold tracking-[-0.04em] leading-[1.04] mb-6"
             style={{ color: "var(--text-primary)" }}
           >
             Pay anyone.
@@ -162,14 +192,14 @@ export default function LandingPage() {
           </h1>
 
           <p
-            className="text-[17px] leading-relaxed max-w-lg mx-auto mb-10"
+            className="text-[15px] sm:text-[17px] leading-relaxed max-w-lg mx-auto mb-10"
             style={{ color: "var(--text-secondary)" }}
           >
             A privacy-first payment layer on Solana. Amounts hidden, senders anonymous,
             receivers unlinkable. ZK proofs run entirely in your browser.
           </p>
 
-          <div className="flex items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16">
             <Link
               href="/dashboard"
               className="px-7 py-3.5 text-[13px] font-semibold uppercase tracking-[0.04em] transition-opacity hover:opacity-90"
@@ -194,7 +224,7 @@ export default function LandingPage() {
 
           {/* Chain view vs private view */}
           <div
-            className="grid grid-cols-2 gap-px mx-auto text-left"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-px mx-auto text-left"
             style={{ maxWidth: "580px", background: "var(--border-subtle)" }}
           >
             {/* What the chain sees */}
@@ -269,7 +299,7 @@ export default function LandingPage() {
 
       {/* Core guarantees */}
       <div
-        className="grid grid-cols-3 gap-px"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-px"
         style={{ borderTop: "1px solid var(--border-subtle)", background: "var(--border-subtle)" }}
       >
         {[
@@ -286,7 +316,7 @@ export default function LandingPage() {
             desc: "Send to alice.sol. The chain records only a one-time stealth address with no link to either party.",
           },
         ].map((g) => (
-          <div key={g.label} className="px-8 py-7" style={{ background: "var(--bg-base)" }}>
+          <div key={g.label} className="px-5 sm:px-8 py-6 sm:py-7" style={{ background: "var(--bg-base)" }}>
             <p className="text-[13px] font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
               {g.label}
             </p>
@@ -298,16 +328,16 @@ export default function LandingPage() {
       </div>
 
       {/* How it works */}
-      <section className="px-8 py-20">
+      <section className="px-5 sm:px-8 py-14 sm:py-20">
         <div className="max-w-4xl mx-auto">
           <p
-            className="text-[10px] uppercase tracking-[0.1em] mb-12 text-center"
+            className="text-[10px] uppercase tracking-[0.1em] mb-8 sm:mb-12 text-center"
             style={{ color: "var(--text-tertiary)" }}
           >
             The private loop
           </p>
           <div
-            className="grid grid-cols-4 gap-px"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px"
             style={{ background: "var(--border-subtle)" }}
           >
             {STEPS.map((step) => (
@@ -338,22 +368,22 @@ export default function LandingPage() {
 
       {/* Features */}
       <section
-        className="px-8 pb-20"
+        className="px-5 sm:px-8 pb-14 sm:pb-20"
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <div className="max-w-4xl mx-auto">
           <p
-            className="text-[10px] uppercase tracking-[0.1em] my-12 text-center"
+            className="text-[10px] uppercase tracking-[0.1em] my-8 sm:my-12 text-center"
             style={{ color: "var(--text-tertiary)" }}
           >
             Everything you need
           </p>
           <div
-            className="grid grid-cols-3 gap-px"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px"
             style={{ background: "var(--border-subtle)" }}
           >
             {FEATURES.map((f) => (
-              <div key={f.title} className="p-7" style={{ background: "var(--bg-base)" }}>
+              <div key={f.title} className="p-6 sm:p-7" style={{ background: "var(--bg-base)" }}>
                 <div
                   className="text-xl mb-4 font-mono"
                   style={{ color: "var(--accent)" }}
@@ -378,9 +408,88 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* BOT Chain */}
+      {BOTCHAIN_ENABLED && (
+        <section
+          className="px-5 sm:px-8 py-14 sm:py-20"
+          style={{ borderTop: "1px solid var(--border-subtle)" }}
+        >
+          <div className="max-w-4xl mx-auto">
+            <p
+              className="text-[10px] uppercase tracking-[0.1em] mb-3 text-center"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              Also on BOT Chain
+            </p>
+            <h2
+              className="text-[24px] sm:text-[30px] font-semibold tracking-[-0.02em] mb-4 text-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Stealth addresses, not a second guess
+            </h2>
+            <p
+              className="text-[13px] sm:text-[14px] leading-relaxed max-w-xl mx-auto mb-10 text-center"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Every BOT Chain payment lands at a fresh one-time address derived from the
+              recipient&apos;s published keys. Nobody watching the chain can tie it back to them.
+              It is a different privacy model from the Solana side, and a narrower one — here is
+              exactly where the line falls.
+            </p>
+
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-px"
+              style={{ background: "var(--border-subtle)" }}
+            >
+              {PRIVACY_MODELS.map((model) => (
+                <div key={model.chain} className="p-5 sm:p-6" style={{ background: "var(--bg-base)" }}>
+                  <p
+                    className="text-[13px] font-semibold mb-1"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {model.chain}
+                  </p>
+                  <p
+                    className="text-[11px] font-mono mb-4"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    {model.method}
+                  </p>
+                  {model.rows.map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-center justify-between gap-3 py-2"
+                      style={{ borderBottom: "1px solid var(--border-subtle)" }}
+                    >
+                      <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                        {row.label}
+                      </span>
+                      <span
+                        className="text-[11px] font-mono"
+                        style={{ color: row.strong ? "var(--accent)" : "var(--text-secondary)" }}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <p
+              className="text-[11px] leading-relaxed mt-4 text-center"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              No ZK circuits and no bridge — pure secp256k1 in your browser, announced through an
+              ERC-5564 contract and claimed by the recipient alone.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* SDK strip */}
       <section
-        className="px-8 py-10"
+        className="px-5 sm:px-8 py-10"
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <div className="max-w-4xl mx-auto">
@@ -410,12 +519,12 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section
-        className="px-8 py-24 text-center"
+        className="px-5 sm:px-8 py-16 sm:py-24 text-center"
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <div className="max-w-md mx-auto">
           <h2
-            className="text-[36px] font-semibold tracking-[-0.025em] leading-[1.1] mb-4"
+            className="text-[28px] sm:text-[36px] font-semibold tracking-[-0.025em] leading-[1.1] mb-4"
             style={{ color: "var(--text-primary)" }}
           >
             Your payments.
@@ -440,7 +549,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer
-        className="px-8 py-5 flex items-center justify-between"
+        className="px-5 sm:px-8 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <div className="flex items-center gap-2">

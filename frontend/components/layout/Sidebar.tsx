@@ -57,13 +57,18 @@ function UmbraStatusBadge() {
   );
 }
 
-export default function Sidebar() {
+/**
+ * @param onNavigate Called when a nav link is followed. The mobile drawer uses this to close
+ * itself; on desktop the sidebar is always visible and there is nothing to close.
+ */
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
   const { isBotChain } = useChain();
 
   return (
     <aside
-      className="w-[220px] flex-shrink-0 flex flex-col overflow-y-auto"
+      // Full width inside the mobile drawer, a fixed rail on desktop.
+      className="w-full md:w-[220px] flex-shrink-0 flex flex-col overflow-y-auto"
       style={{
         borderRight: "1px solid var(--border-subtle)",
         background: "var(--bg-surface)",
@@ -72,7 +77,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-6 py-5 flex-shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5" onClick={onNavigate}>
           <Image src="/ghost-32.png" alt="Ghost Pay" width={22} height={22} priority />
           <span className="text-[15px] font-semibold tracking-[-0.01em]" style={{ color: "var(--text-primary)" }}>
             Ghost Pay
@@ -89,7 +94,10 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] font-medium transition-colors"
+              onClick={onNavigate}
+              // py-2.5 keeps the desktop rhythm; the coarse-pointer rule in globals.css raises the
+              // hit area on touch devices without loosening the layout for a mouse.
+              className="nav-link flex items-center justify-between gap-2 px-3 py-2 text-[13px] font-medium transition-colors"
               style={{
                 borderRadius: "2px",
                 background: active ? "var(--accent-dim)" : "transparent",
