@@ -5,6 +5,7 @@ import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
 import { activeBotChain, faucetUrl, isBotChainId } from "@/lib/botchain/chain";
 import { isDeployed } from "@/lib/botchain/contracts";
+import BotChainBanner from "./BotChainBanner";
 
 /**
  * The preconditions every BOT Chain screen shares, in one place.
@@ -70,7 +71,14 @@ export default function BotChainGate({ children }: { children: React.ReactNode }
     );
   }
 
-  return <>{children}</>;
+  // The banner rides with the gate so every BOT Chain screen carries the network and the honest
+  // scope of what stealth addresses hide, without each page remembering to include it.
+  return (
+    <>
+      <BotChainBanner />
+      {children}
+    </>
+  );
 }
 
 function Notice({ title, children }: { title: string; children: React.ReactNode }) {

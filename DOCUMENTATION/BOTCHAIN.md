@@ -160,9 +160,31 @@ Verified clean at 320, 360, 390, 414 and 768px.
 
 The drawer is also asserted to close on navigation, and the desktop pass still runs unchanged.
 
-### Next — P5, gating, banner, landing
+### Done — P5, gating, banner, landing
 
-Then P6 (verify, mainnet cutover).
+**The flag is now the only thing that decides.** It was not before. `WalletControl` checked it, but
+`isBotChain` came straight from persisted state, so a browser holding `botchain` from a preview
+build would have had `/send`, `/receive` and the sidebar rendering BOT Chain views behind a Solana
+wallet control — a state neither chain works in. `lib/botchain/gate.ts` now owns the decision,
+`ChainProvider` enforces it and rewrites a selection the flag no longer permits, and
+`resolveActiveChain` is unit-tested. `npm run smoke:botchain:flagoff` asserts the whole thing end to
+end against a browser seeded with `botchain`.
+
+The site title and description are gated too. `NEXT_PUBLIC_*` inlines on the server as well, so a
+production build with the flag off never claims a second chain — which matters more here than in the
+UI, because search results and link previews outlive the deploy that produced them.
+
+**`BotChainBanner`** rides with `BotChainGate`, so every BOT Chain screen states two things without
+each page remembering to: which network (Bohr is a testnet, tBOT is worthless, here is the faucet),
+and what stealth addresses actually hide.
+
+**Landing.** A flag-gated section putting the two privacy models side by side — Solana:
+recipient unlinkable, amount encrypted, sender anonymous; BOT Chain: recipient unlinkable, amount
+public, sender public. The differences are stated rather than smoothed over, because a listing
+review is exactly the audience that checks a privacy claim against the chain, and implying parity
+is a claim two minutes on an explorer disproves.
+
+### Next — P6, verify and mainnet cutover
 
 **Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
 the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
@@ -239,9 +261,11 @@ then touch 677.
   `__tests__/vectors.ts`. If those fail, do not update the expectations — find out which side moved.
 - `isDeployed()` requires a non-zero deploy block as well as the three addresses. Without it the
   scanner has no start point, and walking ~0.75s blocks from genesis is a hung tab, not a slow scan.
-- With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, `WalletControl` renders exactly the old
-  `ConnectButton` — no switcher, no behavioural change. Ghost Pay is live; the second chain stays
-  invisible in production until P6 passes.
+- With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, the BOT Chain path does not exist: the
+  wallet control is exactly the old `ConnectButton`, `isBotChain` is forced false, a stored
+  selection is rewritten to `solana`, and neither the landing section nor the page title mentions a
+  second chain. Ghost Pay is live; it stays that way until P6 passes. `lib/botchain/gate.ts` is the
+  single place that decides — do not reintroduce a second read of the flag.
 - Vercel scoping: flag `true` on Preview and Development, `false` (or absent) on Production until
   the cutover.
 

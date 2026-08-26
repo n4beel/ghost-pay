@@ -5,6 +5,7 @@ import WalletProvider from "@/components/providers/WalletProvider";
 import { ChainProvider } from "@/components/providers/ChainProvider";
 import { EvmProvider } from "@/components/providers/EvmProvider";
 import { StealthProvider } from "@/components/providers/StealthProvider";
+import { BOTCHAIN_ENABLED } from "@/lib/botchain/gate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,10 +20,21 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+/**
+ * The title and description advertise BOT Chain only in builds where it exists.
+ *
+ * `NEXT_PUBLIC_*` is inlined at build time on the server too, so this resolves per deployment: a
+ * production build with the flag off never claims a second chain a visitor cannot reach. Search
+ * results and link previews outlive the deploy that produced them, which makes an overclaim here
+ * more durable than one in the UI.
+ */
 export const metadata: Metadata = {
-  title: "Ghost Pay - Private Payments on Solana and BOT Chain",
-  description:
-    "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy, and stealth address payments on BOT Chain.",
+  title: BOTCHAIN_ENABLED
+    ? "Ghost Pay - Private Payments on Solana and BOT Chain"
+    : "Ghost Pay - Private Payments on Solana",
+  description: BOTCHAIN_ENABLED
+    ? "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy, and stealth address payments on BOT Chain."
+    : "Pay anyone, reveal nothing. Private payments on Solana with cryptographic privacy — amounts hidden, sender and receiver unlinkable.",
   icons: {
     icon: [
       { url: "/ghost-32.png", sizes: "32x32", type: "image/png" },

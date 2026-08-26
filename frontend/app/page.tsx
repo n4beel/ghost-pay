@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import RedactedValue from "@/components/ui/RedactedValue";
+import { BOTCHAIN_ENABLED } from "@/lib/botchain/gate";
 
 const FEATURES = [
   {
@@ -70,6 +71,35 @@ const SDKS = [
   "Torque",
   "RPC Fast",
   "Palm USD",
+];
+
+/**
+ * The two privacy models, side by side, with the differences stated rather than smoothed over.
+ *
+ * BOT Chain gets stealth addresses, not the Solana confidential-transfer stack: recipients are
+ * unlinkable, amounts and senders are not. A listing review is exactly the audience that checks a
+ * privacy claim against the chain, so the honest comparison is also the persuasive one — and the
+ * alternative, implying parity, is a claim two minutes on an explorer disproves.
+ */
+const PRIVACY_MODELS = [
+  {
+    chain: "Solana",
+    method: "Umbra ZK · confidential transfers",
+    rows: [
+      { label: "Recipient", value: "Unlinkable", strong: true },
+      { label: "Amount", value: "Encrypted", strong: true },
+      { label: "Sender", value: "Anonymous", strong: true },
+    ],
+  },
+  {
+    chain: "BOT Chain",
+    method: "ERC-5564 stealth addresses · secp256k1",
+    rows: [
+      { label: "Recipient", value: "Unlinkable", strong: true },
+      { label: "Amount", value: "Public", strong: false },
+      { label: "Sender", value: "Public", strong: false },
+    ],
+  },
 ];
 
 const CHAIN_VIEW = [
@@ -377,6 +407,85 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* BOT Chain */}
+      {BOTCHAIN_ENABLED && (
+        <section
+          className="px-5 sm:px-8 py-14 sm:py-20"
+          style={{ borderTop: "1px solid var(--border-subtle)" }}
+        >
+          <div className="max-w-4xl mx-auto">
+            <p
+              className="text-[10px] uppercase tracking-[0.1em] mb-3 text-center"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              Also on BOT Chain
+            </p>
+            <h2
+              className="text-[24px] sm:text-[30px] font-semibold tracking-[-0.02em] mb-4 text-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Stealth addresses, not a second guess
+            </h2>
+            <p
+              className="text-[13px] sm:text-[14px] leading-relaxed max-w-xl mx-auto mb-10 text-center"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Every BOT Chain payment lands at a fresh one-time address derived from the
+              recipient&apos;s published keys. Nobody watching the chain can tie it back to them.
+              It is a different privacy model from the Solana side, and a narrower one — here is
+              exactly where the line falls.
+            </p>
+
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-px"
+              style={{ background: "var(--border-subtle)" }}
+            >
+              {PRIVACY_MODELS.map((model) => (
+                <div key={model.chain} className="p-5 sm:p-6" style={{ background: "var(--bg-base)" }}>
+                  <p
+                    className="text-[13px] font-semibold mb-1"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {model.chain}
+                  </p>
+                  <p
+                    className="text-[11px] font-mono mb-4"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    {model.method}
+                  </p>
+                  {model.rows.map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-center justify-between gap-3 py-2"
+                      style={{ borderBottom: "1px solid var(--border-subtle)" }}
+                    >
+                      <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                        {row.label}
+                      </span>
+                      <span
+                        className="text-[11px] font-mono"
+                        style={{ color: row.strong ? "var(--accent)" : "var(--text-secondary)" }}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <p
+              className="text-[11px] leading-relaxed mt-4 text-center"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              No ZK circuits and no bridge — pure secp256k1 in your browser, announced through an
+              ERC-5564 contract and claimed by the recipient alone.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* SDK strip */}
       <section

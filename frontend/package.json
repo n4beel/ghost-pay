@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "smoke:botchain": "node scripts/drive-botchain.mjs",
-    "smoke:botchain:mobile": "VIEWPORT=mobile node scripts/drive-botchain.mjs"
+    "smoke:botchain:mobile": "VIEWPORT=mobile node scripts/drive-botchain.mjs",
+    "smoke:botchain:flagoff": "FLAG_OFF=1 node scripts/drive-botchain.mjs"
   },
   "dependencies": {
     "@bonfida/spl-name-service": "^3.0.21",

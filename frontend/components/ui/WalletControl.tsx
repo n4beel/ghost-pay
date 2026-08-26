@@ -5,20 +5,19 @@ import ChainSwitcher from "./ChainSwitcher";
 import ConnectButton from "./ConnectButton";
 import EvmConnectButton from "./EvmConnectButton";
 
-const BOTCHAIN_ENABLED = process.env.NEXT_PUBLIC_BOTCHAIN_ENABLED === "true";
-
 /**
  * The sidebar wallet control. Renders the chain switcher above whichever connect button matches the
  * selected chain.
  *
  * With the BOT Chain flag off this is exactly the old Solana ConnectButton, no switcher, no
- * behavioural change. Ghost Pay is live, so the second chain stays invisible in production until
- * the whole path is verified end to end.
+ * behavioural change. The flag itself lives in ChainProvider, which also forces `isBotChain` false
+ * — hiding the switcher alone would leave a stored selection routing pages to a BOT Chain view
+ * this control cannot serve.
  */
 export default function WalletControl() {
-  const { isBotChain } = useChain();
+  const { isBotChain, botChainEnabled } = useChain();
 
-  if (!BOTCHAIN_ENABLED) return <ConnectButton />;
+  if (!botChainEnabled) return <ConnectButton />;
 
   return (
     <>

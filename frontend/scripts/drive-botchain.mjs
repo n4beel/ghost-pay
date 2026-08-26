@@ -39,6 +39,13 @@ const SHOT = process.env.SHOT_DIR;
 const DETERMINISTIC = process.env.NONDETERMINISTIC !== "1";
 /** `VIEWPORT=mobile` runs the same steps at phone size and adds the mobile-only assertions. */
 const MOBILE = process.env.VIEWPORT === "mobile";
+/**
+ * `FLAG_OFF=1` asserts the opposite of everything else here: that with
+ * NEXT_PUBLIC_BOTCHAIN_ENABLED unset or false, the BOT Chain path is completely unreachable — even
+ * for a browser that already has "botchain" persisted from a preview build. Run it against a dev
+ * server started with the flag off.
+ */
+const FLAG_OFF = process.env.FLAG_OFF === "1";
 const VIEWPORT = MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 900 };
 const ACCOUNT = "0x9f2C4bE0aB1c9E0d1234567890AbCdEf12345678";
 
@@ -225,9 +232,46 @@ async function main() {
   };
 
   console.log(
-    `\nBOT Chain smoke test (${MOBILE ? `mobile ${VIEWPORT.width}x${VIEWPORT.height}` : "desktop"}, ` +
-      `wallet signs deterministically: ${DETERMINISTIC})\n`,
+    `\nBOT Chain smoke test (${MOBILE ? `mobile ${VIEWPORT.width}x${VIEWPORT.height}` : "desktop"}` +
+      `${FLAG_OFF ? ", flag OFF" : `, wallet signs deterministically: ${DETERMINISTIC}`})\n`,
   );
+
+  if (FLAG_OFF) {
+    // localStorage was seeded with "botchain" by the init script above, which is exactly the state
+    // a preview-build visitor arrives in.
+    await page.goto(`${APP}/send`, { waitUntil: "networkidle" });
+
+    await step("send page falls back to Solana", () =>
+      page.getByText(/amounts hidden, sender anonymous/i).waitFor({ timeout: 20000 }),
+    );
+    await step("no chain switcher", async () => {
+      if (await page.getByRole("group", { name: /select network/i }).isVisible().catch(() => false)) {
+        throw new Error("the chain switcher is reachable with the flag off");
+      }
+    });
+    await step("the stored selection is cleared, not just ignored", async () => {
+      const stored = await page.evaluate(() => localStorage.getItem("ghost-pay:active-chain"));
+      if (stored !== "solana") throw new Error(`stored chain is still ${stored}`);
+    });
+    await step("receive page falls back to Solana", async () => {
+      await page.goto(`${APP}/receive`, { waitUntil: "networkidle" });
+      await page.getByText(/Share your payment address/i).waitFor({ timeout: 20000 });
+    });
+    await step("landing page does not advertise BOT Chain", async () => {
+      await page.goto(`${APP}/`, { waitUntil: "networkidle" });
+      if (await page.getByText(/Also on BOT Chain/i).isVisible().catch(() => false)) {
+        throw new Error("the BOT Chain landing section renders with the flag off");
+      }
+      const title = await page.title();
+      if (/BOT Chain/i.test(title)) throw new Error(`page title advertises BOT Chain: ${title}`);
+    });
+
+    console.log("\n  no page errors");
+    await browser.close();
+    stopRpc();
+    console.log("\nAll steps passed.\n");
+    process.exit(0);
+  }
 
   try {
     await page.goto(`${APP}/send`, { waitUntil: "networkidle" });
