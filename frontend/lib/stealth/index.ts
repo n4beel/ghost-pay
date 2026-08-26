@@ -56,8 +56,10 @@ export {
 } from "./scan";
 
 export {
+  DUST_GAS_MULTIPLE,
   FEE_BUFFER_PERCENT,
   NATIVE_TRANSFER_GAS,
+  isDust,
   computeStealthPrivateKey,
   deriveSpendingAccountFor,
   quoteSweep,

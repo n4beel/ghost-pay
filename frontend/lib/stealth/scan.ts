@@ -316,6 +316,10 @@ export function watchAnnouncements({
     address: announcer,
     event: announcerAbi[0],
     args: { schemeId: SCHEME_ID },
+    // Poll with `eth_getLogs` rather than installing a filter. Filters are the default and are
+    // faster, but plenty of public RPCs — Bohr's among them — do not implement `eth_newFilter`,
+    // and there the default fails outright instead of degrading.
+    poll: true,
     onLogs: (logs) => {
       for (const log of logs) {
         const announcement = toAnnouncement(log);

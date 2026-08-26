@@ -5,6 +5,7 @@ import type { Hex } from "viem";
 import {
   useAccount,
   useChainId,
+  useGasPrice,
   usePublicClient,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -20,6 +21,7 @@ import { activeBotChain, botChainById, isBotChainId, txUrl } from "@/lib/botchai
 import { formatNativeAmount } from "@/lib/botchain/amount";
 import { readMetaAddress, registerKeysCall } from "@/lib/botchain/registry";
 import {
+  isDust,
   sweepStealthPayment,
   toMetaAddressUri,
   type StealthKeys,
@@ -208,10 +210,15 @@ function PaymentsCard({
   viewingKeys: ViewingKeys | null;
   keys: StealthKeys;
 }) {
-  const { payments, scanning, progress, error, rescan } = useStealthPayments(viewingKeys);
+  const { payments, scanning, progress, error, liveUnavailable, rescan } =
+    useStealthPayments(viewingKeys);
 
-  const unclaimed = payments.filter((p) => p.balance === null || p.balance > 0n);
-  const claimed = payments.length - unclaimed.length;
+  // A swept address keeps a remainder too small to move. Counting it as unclaimed would leave the
+  // list permanently showing outstanding payments that no longer exist.
+  const { data: gasPrice } = useGasPrice();
+  const settled = (p: StealthPaymentRow) =>
+    p.balance !== null && gasPrice !== undefined && isDust(p.balance, gasPrice);
+  const claimed = payments.filter(settled).length;
 
   return (
     <Panel>
@@ -238,6 +245,14 @@ function PaymentsCard({
         </p>
       )}
 
+      {/* Not an error. History loaded fine; only the live feed is unavailable, which is normal on
+          an RPC without filter support. Saying so beats a red banner over a working list. */}
+      {liveUnavailable && !error && (
+        <p className="text-[11px] mb-3" style={{ color: "var(--text-tertiary)" }}>
+          This RPC doesn&apos;t support live updates. New payments appear when you press Rescan.
+        </p>
+      )}
+
       {scanning && payments.length === 0 ? (
         <div className="flex flex-col items-center py-6 gap-2">
           <Spinner label="Scanning announcements…" />
@@ -254,7 +269,12 @@ function PaymentsCard({
       ) : (
         <div className="flex flex-col gap-2">
           {payments.map((payment) => (
-            <PaymentRow key={payment.stealthAddress} payment={payment} keys={keys} />
+            <PaymentRow
+              key={payment.stealthAddress}
+              payment={payment}
+              keys={keys}
+              settled={settled(payment)}
+            />
           ))}
           {claimed > 0 && (
             <p className="text-[11px] pt-1" style={{ color: "var(--text-tertiary)" }}>
@@ -270,9 +290,12 @@ function PaymentsCard({
 function PaymentRow({
   payment,
   keys,
+  settled,
 }: {
   payment: StealthPaymentRow;
   keys: StealthKeys;
+  /** Claimed, or holding only an unmovable remainder — either way there is nothing to do. */
+  settled: boolean;
 }) {
   const chainId = useChainId();
   const client = usePublicClient();
@@ -282,8 +305,9 @@ function PaymentRow({
   const [sweeping, setSweeping] = useState(false);
   const [sweptHash, setSweptHash] = useState<Hex | null>(null);
 
-  const isClaimed = payment.balance !== null && payment.balance === 0n;
-  const shown = payment.balance ?? payment.amount ?? 0n;
+  // Once settled, show what arrived rather than the remainder — the amount the sender sent is the
+  // number the recipient recognises.
+  const shown = settled ? (payment.amount ?? 0n) : (payment.balance ?? payment.amount ?? 0n);
 
   const claim = async () => {
     if (!client || !address || !isBotChainId(chainId)) return;
@@ -323,7 +347,7 @@ function PaymentRow({
         </p>
       </div>
 
-      {isClaimed ? (
+      {settled ? (
         <Badge variant="default">Claimed</Badge>
       ) : sweptHash ? (
         <Button

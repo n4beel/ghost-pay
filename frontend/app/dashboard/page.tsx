@@ -18,6 +18,9 @@ import { formatBalance } from "@/lib/umbra/balance";
 import NotConnectedView from "@/components/ui/NotConnectedView";
 import { useClaimBackground } from "@/components/providers/ClaimProvider";
 import { loadActivities, type LocalActivity } from "@/lib/activity-log";
+import { useChain } from "@/components/providers/ChainProvider";
+import BotChainGate from "@/components/botchain/BotChainGate";
+import BotChainDashboard from "@/components/botchain/BotChainDashboard";
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
@@ -97,6 +100,23 @@ function RegistrationBanner({
 }
 
 export default function DashboardPage() {
+  const { isBotChain } = useChain();
+
+  if (isBotChain) return <BotChainDashboardPage />;
+  return <SolanaDashboardPage />;
+}
+
+function BotChainDashboardPage() {
+  return (
+    <PageShell title="Dashboard" description="Your BOT Chain balance and incoming stealth payments">
+      <BotChainGate>
+        <BotChainDashboard />
+      </BotChainGate>
+    </PageShell>
+  );
+}
+
+function SolanaDashboardPage() {
   const { connected, publicKey } = useWallet();
   const { client, registrationState, register, isReady } = useUmbra();
   const portfolio = usePortfolio();

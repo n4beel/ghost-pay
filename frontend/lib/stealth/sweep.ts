@@ -100,6 +100,29 @@ export const NATIVE_TRANSFER_GAS = 21_000n;
  */
 export const FEE_BUFFER_PERCENT = 25n;
 
+/**
+ * Below this, a stealth address is empty for practical purposes.
+ *
+ * A sweep reserves `gas × maxFeePerGas` with a buffer, but EIP-1559 refunds the difference between
+ * that ceiling and the price actually paid, so a remainder is left behind every time. It is not a
+ * bug and it cannot be swept: any transaction moving it costs more than it is worth. Offering a
+ * "claim" for it produces a button that can only ever fail, so the UI needs to recognise dust
+ * rather than treating a non-zero balance as claimable.
+ *
+ * Expressed in gas units so it tracks the fee market instead of being a hardcoded wei figure.
+ */
+export const DUST_GAS_MULTIPLE = 2n;
+
+/**
+ * Whether a balance is worth moving at the current gas price.
+ *
+ * Two transfers' worth, not one: a balance that barely covers its own fee delivers nothing after
+ * paying it.
+ */
+export function isDust(balance: bigint, gasPrice: bigint): boolean {
+  return balance < NATIVE_TRANSFER_GAS * gasPrice * DUST_GAS_MULTIPLE;
+}
+
 export type SweepQuote = {
   balance: bigint;
   gas: bigint;

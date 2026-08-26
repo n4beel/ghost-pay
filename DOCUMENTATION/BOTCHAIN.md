@@ -185,11 +185,45 @@ public, sender public. The differences are stated rather than smoothed over, bec
 review is exactly the audience that checks a privacy claim against the chain, and implying parity
 is a claim two minutes on an explorer disproves.
 
-### Next — P6, verify and mainnet cutover
+### Done — first real MetaMask run, and what it found
 
-**Open item, deliberately deferred.** `/dashboard` and `/history` are marked as BOT Chain pages in
-the sidebar but still render their Solana views. Either give them a BOT Chain branch or flag them
-`SOL`; right now the nav overstates what works.
+The full loop worked on Bohr: unlock, publish, resolve a recipient by their plain address, send,
+scan, claim. Five things came out of it.
+
+- **`/dashboard` and `/history` now have BOT Chain branches.** They were marked as BOT Chain pages
+  in the sidebar while rendering their Solana views, so a connected EVM wallet was told to connect
+  a wallet. The dashboard shows the public balance and the unclaimed stealth total as two separate
+  figures — never summed, because the second is not spendable from the first until claimed. History
+  is incoming only: a stealth payment you *send* leaves nothing on chain tied to your identity, and
+  an empty "sent" column would read as broken rather than as the point of the scheme.
+- **A failing live watcher no longer presents as a failed scan.** Bohr's RPC has no
+  `eth_newFilter`, so `watchEvent` errored and the receive page showed a red error above a list of
+  payments it had loaded perfectly well. `watchEvent` now polls with `eth_getLogs` (`poll: true`),
+  and a watcher failure surfaces as a quiet "press Rescan" line instead of a page error.
+- **Swept addresses keep dust, and the UI now knows it.** EIP-1559 refunds the gap between
+  `maxFeePerGas` and the price actually paid, so every sweep leaves a remainder. It was being
+  offered as claimable, and claiming it failed — correctly, since it costs more to move than it is
+  worth. `isDust()` recognises it and the row reads Claimed.
+- **The wrong-network state is recoverable.** With Phantom also injecting an EVM provider, wagmi
+  reconnected to it on Ethereum mainnet and the sidebar showed "Switch to Bohr Testnet" with no
+  indication of which wallet was connected and no way out — it read as "not connected". It now
+  names the connector and offers Disconnect.
+- **Re-unlocking after an account switch is correct, not a bug.** Keys live in memory and are
+  cleared on account change; anything else would leave one account's spending key reachable from
+  another account's UI.
+
+### Done — contract tests
+
+`contracts/test/GhostPayStealthSend.t.sol` covers all five revert paths, atomicity of the
+announcement and the transfer, payment to a smart account beyond the `transfer` stipend, and a fuzz
+run over amounts.
+
+**These have never been executed.** Foundry's release hosts are unreachable from the sandbox this
+was written in. The file type-checks clean against current `forge-std` via solc-js — every cheatcode
+and custom-error selector resolves — but whether the assertions hold is unverified. Run
+`forge test -vv` before trusting it, and before mainnet.
+
+### Next — P6, verify and mainnet cutover
 
 ---
 

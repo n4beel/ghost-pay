@@ -25,7 +25,7 @@ const menuItemClass =
  * sidebar looks identical whichever chain is selected.
  */
 export default function EvmConnectButton() {
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected, chainId, connector } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -68,18 +68,47 @@ export default function EvmConnectButton() {
 
   // Connected but pointed at some other network. Nothing else should render until this is fixed,
   // otherwise the user signs a transaction against the wrong chain.
+  //
+  // Which wallet, and a way out, both matter here. With more than one EVM extension installed —
+  // Phantom also injects one — wagmi reconnects to whichever was last authorised, which may not be
+  // the one the user meant. Without the name and the disconnect this state reads as "not connected"
+  // and there is nothing to click but a switch that changes the wrong wallet's network.
   if (isConnected && !isBotChainId(chainId)) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full"
-        onClick={handleSwitch}
-        loading={isSwitching}
-        style={{ borderColor: "var(--warning)", color: "var(--warning)" }}
-      >
-        Switch to {activeBotChain.name}
-      </Button>
+      <div className="w-full flex flex-col gap-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={handleSwitch}
+          loading={isSwitching}
+          style={{ borderColor: "var(--warning)", color: "var(--warning)" }}
+        >
+          Switch to {activeBotChain.name}
+        </Button>
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <span
+            className="text-[10px] font-mono truncate"
+            style={{ color: "var(--text-tertiary)" }}
+            title={address}
+          >
+            {connector?.name ?? "Connected"}
+            {address ? ` · ${truncate(address)}` : ""}
+          </span>
+          <button
+            onClick={() => disconnect()}
+            className="text-[10px] uppercase tracking-[0.04em] flex-shrink-0"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--text-tertiary)",
+              cursor: "pointer",
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
+      </div>
     );
   }
 
