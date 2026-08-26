@@ -71,18 +71,45 @@ real balance before mainnet.
 
 `next build` passes (14 routes), `tsc --noEmit` clean.
 
-### Next — P2, stealth address library (~1.5 days)
+### Done — P2, stealth address library
 
-This is the piece where a silent bug means lost funds. Build it against the ERC-5564 spec test
-vectors, not by eyeballing the UI.
+`frontend/lib/stealth/`, 109 tests, `npm test`.
 
-- `lib/stealth/keys.ts` — signature-derived spend and view keypairs, meta-address encode/decode.
-- `lib/stealth/generate.ts` — sender side: ephemeral keypair, shared secret, stealth address, view tag.
-- `lib/stealth/scan.ts` — `eth_getLogs` from the announcer's deploy block for history, view-tag
-  filter, full derivation on survivors; `eth_subscribe` over the WebSocket RPC for live announcements.
-- `lib/stealth/sweep.ts` — derive the stealth private key, transfer balance minus gas.
+- `crypto.ts` — scheme 1 primitives. Every byte-level convention lives here.
+- `keys.ts` — signature-derived spend and view keypairs, meta-address encode/decode and `st:` URIs.
+- `generate.ts` — sender side: ephemeral keypair, shared secret, stealth address, view tag, ERC-5564
+  native-token metadata.
+- `scan.ts` — chunked `eth_getLogs` from the announcer's deploy block, view-tag filter, full
+  derivation on survivors; `watchAnnouncements` for live announcements.
+- `sweep.ts` — derive the stealth private key, quote the fee, transfer balance minus gas.
 
-Then P3 (send/receive UI), P4 (mobile), P5 (gating, banner, landing), P6 (verify, mainnet cutover).
+**The interop decision.** ERC-5564 says "the secret is hashed" without saying which encoding of the
+point gets hashed, so two implementations can both follow the spec exactly and derive different
+addresses. We hash the **33 byte compressed** shared secret, matching ScopeLift's
+`stealth-address-sdk` — the implementation wallets and indexers were built against. That choice is
+not a comment, it is a test: `__tests__/reference.test.ts` runs our code and that SDK side by side
+over randomised inputs, and `__tests__/vectors.ts` freezes SDK-generated known-answer vectors so the
+pin survives the dev dependency being dropped. There are no ERC-5564 hex vectors to test against;
+this is the closest thing that exists.
+
+Key derivation is the one place we diverge, deliberately: ScopeLift splits the signature into
+halves, we hash it into a seed with `"spend"` and `"view"` domain separators as
+[the plan](https://claude.ai/code/artifact/954c8d12-353b-4885-aab3-110c6ae10212) specifies. Nothing
+on-chain depends on it — it only decides where a user's keys come from — but it does mean Ghost Pay
+keys are recoverable in Ghost Pay, not in another ERC-5564 wallet. `KEY_VECTORS` pins it so an
+accidental edit fails loudly instead of orphaning funds.
+
+`assertDeterministicDerivation(sigA, sigB)` is the guard for the MPC landmine below. The receive
+flow must call it — sign the message twice, compare — before letting a user take funds against
+derived keys.
+
+Test setup is vitest: `npm test`, `npm run test:watch`, `npm run typecheck`. `next build` needs
+`NEXT_PUBLIC_RPC_ENDPOINT` set (the Solana connection is constructed at build time), so run it with
+a populated `.env.local`.
+
+### Next — P3, send and receive UI
+
+Then P4 (mobile), P5 (gating, banner, landing), P6 (verify, mainnet cutover).
 
 ---
 
@@ -149,6 +176,10 @@ then touch 677.
 
 - `lib/umbra/*`, `components/providers/WalletProvider.tsx`, `components/ui/ConnectButton.tsx` are
   Solana-only and currently unmodified by this work. Keep it that way.
+- `STEALTH_KEY_MESSAGE` in `lib/stealth/keys.ts` is permanent. Change a character and every existing
+  user derives different keys, with no error and no way back to the funds at the old ones.
+- The conventions in `lib/stealth/crypto.ts` are pinned by `__tests__/reference.test.ts` and
+  `__tests__/vectors.ts`. If those fail, do not update the expectations — find out which side moved.
 - With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, `WalletControl` renders exactly the old
   `ConnectButton` — no switcher, no behavioural change. Ghost Pay is live; the second chain stays
   invisible in production until P6 passes.
