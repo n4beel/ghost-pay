@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import PageShell from "@/components/layout/PageShell";
+import { useChain } from "@/components/providers/ChainProvider";
+import SolanaOnlyNotice from "@/components/botchain/SolanaOnlyNotice";
 import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -48,6 +50,22 @@ function isValidSolanaAddress(addr: string): boolean {
 }
 
 export default function PayrollPage() {
+  const { isBotChain } = useChain();
+
+  // Solana-only. Rendering its connect prompt on BOT Chain would invite a second
+  // wallet connection the app deliberately prevents.
+  if (isBotChain) {
+    return (
+      <PageShell title="Payroll" description="Bulk private disbursements">
+        <SolanaOnlyNotice feature="Private payroll" />
+      </PageShell>
+    );
+  }
+
+  return <SolanaPayrollPage />;
+}
+
+function SolanaPayrollPage() {
   const { connected, publicKey, wallet } = useWallet();
   const { toast } = useToast();
 

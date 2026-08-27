@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useChain } from "./ChainProvider";
 import { initUmbraClient } from "@/lib/umbra/client";
 import { createUmbraSignerFromAdapter } from "@/lib/umbra/signer";
 import type { UmbraClient } from "@/lib/umbra/client";
@@ -36,13 +37,18 @@ const UmbraContext = createContext<UmbraContextValue>({
 
 export function UmbraProvider({ children }: { children: React.ReactNode }) {
   const { wallet, connected, publicKey } = useWallet();
+  const { isBotChain } = useChain();
   const [client, setClient] = useState<UmbraClient | null>(null);
   const [registrationState, setRegistrationState] = useState<RegistrationState>("unknown");
 
   const initializedForKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!connected || !wallet || !publicKey) {
+    // Umbra is Solana-only. Initialising it while the user is on BOT Chain would prompt for
+    // signatures, read registration state on a chain they have switched away from, and keep a live
+    // Solana session behind a BOT Chain screen. Treated exactly like a disconnected wallet, so the
+    // client is torn down rather than merely ignored.
+    if (isBotChain || !connected || !wallet || !publicKey) {
       setClient(null);
       setRegistrationState("unknown");
       initializedForKey.current = null;
@@ -91,7 +97,7 @@ export function UmbraProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, wallet, publicKey]);
+  }, [isBotChain, connected, wallet, publicKey]);
 
   const register = useCallback(async () => {
     if (!client || registrationState === "registering") return;

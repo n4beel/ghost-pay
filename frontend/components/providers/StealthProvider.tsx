@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useAccount, useSignMessage } from "wagmi";
+import { useChain } from "./ChainProvider";
 import {
   STEALTH_KEY_MESSAGE,
   assertDeterministicDerivation,
@@ -66,6 +67,7 @@ function storageKey(address: string): string {
 
 export function StealthProvider({ children }: { children: React.ReactNode }) {
   const { address, isConnected } = useAccount();
+  const { isBotChain, hydrated } = useChain();
   const { signMessageAsync } = useSignMessage();
 
   const [status, setStatus] = useState<StealthStatus>("locked");
@@ -83,9 +85,13 @@ export function StealthProvider({ children }: { children: React.ReactNode }) {
     ownerRef.current = null;
   }, []);
 
-  // Disconnecting or switching accounts invalidates the keys immediately. Anything else would leave
-  // the previous account's spending key reachable from the new account's UI.
+  // Disconnecting, switching accounts, or leaving BOT Chain invalidates the keys immediately.
+  // Anything else would leave a spending key reachable from a screen it does not belong to.
   useEffect(() => {
+    if (hydrated && !isBotChain) {
+      lock();
+      return;
+    }
     if (!isConnected || !address) {
       lock();
       return;
@@ -93,7 +99,7 @@ export function StealthProvider({ children }: { children: React.ReactNode }) {
     if (ownerRef.current && ownerRef.current !== address.toLowerCase()) {
       lock();
     }
-  }, [address, isConnected, lock]);
+  }, [address, isConnected, isBotChain, hydrated, lock]);
 
   const unlock = useCallback(async () => {
     if (!address) return;

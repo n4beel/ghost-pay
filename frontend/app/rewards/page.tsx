@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import PageShell from "@/components/layout/PageShell";
+import { useChain } from "@/components/providers/ChainProvider";
+import SolanaOnlyNotice from "@/components/botchain/SolanaOnlyNotice";
 import Panel from "@/components/ui/Panel";
 import Badge from "@/components/ui/Badge";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -16,6 +18,22 @@ interface LeaderboardEntry {
 }
 
 export default function RewardsPage() {
+  const { isBotChain } = useChain();
+
+  // Solana-only. Rendering its connect prompt on BOT Chain would invite a second
+  // wallet connection the app deliberately prevents.
+  if (isBotChain) {
+    return (
+      <PageShell title="Rewards" description="Private payment leaderboard">
+        <SolanaOnlyNotice feature="Rewards" />
+      </PageShell>
+    );
+  }
+
+  return <SolanaRewardsPage />;
+}
+
+function SolanaRewardsPage() {
   const { connected, publicKey } = useWallet();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
