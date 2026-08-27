@@ -259,6 +259,44 @@ mount: the route declares the chain it needs.
 the wallet control entirely rather than hiding it, and that a Solana-only page on BOT Chain never
 offers its connect prompt.
 
+### Done — connecting is where the page asks for it, and BOT Chain is the default
+
+Two things the first phone run exposed, both about the state before any wallet is connected.
+
+**The empty state was text with no action.** Every page said some version of "connect your wallet",
+and the BOT Chain gate went further and said "from the sidebar" — which on a phone is behind a
+hamburger. The screen asked for something the user could only do after guessing where the wallet
+control lived.
+
+The drawer does not open by default, deliberately. It would cover the page on every load for the
+much larger number of visits where a wallet is already connected, it reads as a modal error rather
+than an invitation, and on the Solana side it would fire before `autoConnect` has had a chance to
+restore a session — so a returning user would be shown a nav drawer for no reason. The fix is the
+other direction: put the action where the instruction already is.
+
+`NotConnectedView` and the BOT Chain gate's "wallet not connected" notice now render
+`WalletControl` inline — the same control the sidebar has, so it always offers the right wallet for
+the selected chain and carries the chain switcher with it. Someone who lands on the wrong chain can
+correct it from the same panel instead of going looking. This is also the "connect button on the
+dashboard": the dashboard's empty state is `NotConnectedView`, so every gated page gets it at once
+rather than one page getting a special case.
+
+**BOT Chain is now what a first-time visitor lands on**, wherever the flag is on. `resolveActiveChain`
+reads as two rules: flag off means Solana whatever was stored (unchanged, and still the rule that
+keeps an unreleased chain out of production), flag on means BOT Chain unless `"solana"` was
+explicitly stored. Only the switcher writes that string, so a deliberate choice still survives a
+reload while an unset or corrupted value opens on BOT Chain. `ChainProvider` seeds its first render
+from `DEFAULT_CHAIN`, which depends only on the build-time flag — server and first client render
+agree, so there is no hydration mismatch and no visible flip from a Solana shell to a BOT Chain one.
+
+Note what this does *not* change: with the flag off in Production, Ghost Pay is still Solana on
+every load. The new default only exists in builds where BOT Chain is enabled.
+
+`npm run smoke:botchain` asserts the connect control is reachable inside `main` — which excludes
+both the desktop rail and the drawer, since Radix portals it to the body — and connects through
+that control rather than the sidebar one, so the drawer-free path is the one under test. A separate
+step loads a context with nothing in storage and asserts it lands on the BOT Chain branch.
+
 ### Next — P6, verify and mainnet cutover
 
 ---
@@ -387,6 +425,9 @@ then touch 677.
   `__tests__/vectors.ts`. If those fail, do not update the expectations — find out which side moved.
 - `isDeployed()` requires a non-zero deploy block as well as the three addresses. Without it the
   scanner has no start point, and walking ~0.75s blocks from genesis is a hung tab, not a slow scan.
+- The connect control lives in the empty state, not only in the sidebar. On a phone the sidebar is
+  behind a hamburger, so a "connect your wallet" screen with no button in it is a dead end. Do not
+  answer this by auto-opening the drawer — that covers the page for every already-connected visit.
 - With `NEXT_PUBLIC_BOTCHAIN_ENABLED` unset or `false`, the BOT Chain path does not exist: the
   wallet control is exactly the old `ConnectButton`, `isBotChain` is forced false, a stored
   selection is rewritten to `solana`, and neither the landing section nor the page title mentions a

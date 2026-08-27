@@ -3,6 +3,7 @@
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
+import WalletControl from "@/components/ui/WalletControl";
 import { activeBotChain, faucetUrl, isBotChainId } from "@/lib/botchain/chain";
 import { isDeployed } from "@/lib/botchain/contracts";
 import BotChainBanner from "./BotChainBanner";
@@ -20,9 +21,16 @@ export default function BotChainGate({ children }: { children: React.ReactNode }
   const { switchChain, isPending } = useSwitchChain();
 
   if (!isConnected) {
+    // The connect control renders here rather than a pointer at the sidebar. On a phone the rail is
+    // behind a hamburger, so "connect from the sidebar" asked the user to guess where the wallet
+    // lived before they could do the one thing the screen wanted. This is also the chain switcher,
+    // which is the way back to Solana for someone who landed on BOT Chain by default.
     return (
       <Notice title="Wallet not connected">
-        Connect an EVM wallet from the sidebar to use {activeBotChain.name}.
+        <p className="mb-4">Connect an EVM wallet to use {activeBotChain.name}.</p>
+        <div style={{ maxWidth: "220px" }}>
+          <WalletControl />
+        </div>
       </Notice>
     );
   }

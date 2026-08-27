@@ -21,18 +21,27 @@ export const CHAIN_STORAGE_KEY = "ghost-pay:active-chain";
  * Extracted from the provider so the one rule that gates an unreleased chain in production is
  * covered by a test rather than by reading a component.
  *
- * Solana is the default and the fallback for everything: an unset value, a corrupted one, and —
- * the case that matters — a stored `botchain` while the flag is off. Someone who selected BOT Chain
- * on a preview build and later loads a production build with the flag off must land on Solana, not
- * on a half-enabled state where the pages render a BOT Chain view the wallet control cannot serve.
+ * Two rules, in this order:
+ *
+ * 1. Flag off — Solana, whatever was stored. This is the one that matters in production. Someone
+ *    who selected BOT Chain on a preview build and later loads a production build with the flag
+ *    off must land on Solana, not on a half-enabled state where the pages render a BOT Chain view
+ *    the wallet control cannot serve.
+ * 2. Flag on — BOT Chain unless Solana was explicitly chosen. Where the flag is on, BOT Chain is
+ *    what the build is for, so an unset or unrecognised value opens on it. Only a stored
+ *    `"solana"` — which the provider writes solely when the user picks Solana in the switcher —
+ *    overrides that, so a deliberate choice still survives a reload.
  */
 export function resolveActiveChain(
   stored: string | null | undefined,
   enabled: boolean = BOTCHAIN_ENABLED,
 ): ActiveChain {
-  if (stored === "botchain" && enabled) return "botchain";
-  return "solana";
+  if (!enabled) return "solana";
+  return stored === "solana" ? "solana" : "botchain";
 }
+
+/** The chain a first-time visitor lands on. Depends only on the build-time flag. */
+export const DEFAULT_CHAIN: ActiveChain = resolveActiveChain(null);
 
 /** Whether a requested selection is allowed. Guards the setter as well as the initial read. */
 export function canSelectChain(chain: ActiveChain, enabled: boolean = BOTCHAIN_ENABLED): boolean {

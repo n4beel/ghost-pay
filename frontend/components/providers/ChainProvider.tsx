@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import {
   BOTCHAIN_ENABLED,
   CHAIN_STORAGE_KEY,
+  DEFAULT_CHAIN,
   canSelectChain,
   resolveActiveChain,
   type ActiveChain,
@@ -42,10 +43,13 @@ const ChainContext = createContext<ChainContextValue>({
  * switcher is not enough on its own: a stored selection would still route every page to a BOT Chain
  * view with no way to get back. `resolveActiveChain` is what actually decides, and it is tested.
  *
- * Defaults to Solana. Ghost Pay is a Solana product that also speaks BOT Chain, not the reverse.
+ * The initial state is `DEFAULT_CHAIN` rather than a hardcoded `"solana"`. It depends only on the
+ * build-time flag, so the server and the first client render agree and there is no hydration
+ * mismatch — and, where the flag is on, no visible flip from a Solana shell to a BOT Chain one on
+ * every load.
  */
 export function ChainProvider({ children }: { children: React.ReactNode }) {
-  const [activeChain, setActiveChainState] = useState<ActiveChain>("solana");
+  const [activeChain, setActiveChainState] = useState<ActiveChain>(DEFAULT_CHAIN);
   const [hydrated, setHydrated] = useState(false);
 
   // Read the persisted choice after mount. Reading during render would desync server and client
@@ -55,7 +59,7 @@ export function ChainProvider({ children }: { children: React.ReactNode }) {
     try {
       stored = localStorage.getItem(CHAIN_STORAGE_KEY);
     } catch {
-      // Private mode or blocked storage. The Solana default is fine.
+      // Private mode or blocked storage. The default is fine.
     }
 
     const resolved = resolveActiveChain(stored, BOTCHAIN_ENABLED);

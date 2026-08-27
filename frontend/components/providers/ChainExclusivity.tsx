@@ -29,8 +29,9 @@ export default function ChainExclusivity({ children }: { children: React.ReactNo
   const { disconnect: disconnectEvm } = useDisconnect();
 
   useEffect(() => {
-    // Before hydration `activeChain` is always the Solana default, so acting here would disconnect
-    // the EVM wallet of every BOT Chain user on every page load.
+    // Before hydration `activeChain` is the build's default, not the user's stored choice, so
+    // acting here would disconnect the wallet of everyone who picked the other chain — on every
+    // single page load.
     if (!hydrated) return;
 
     if (activeChain === "botchain" && solanaConnected) {
