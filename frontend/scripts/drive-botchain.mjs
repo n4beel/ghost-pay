@@ -302,14 +302,33 @@ async function main() {
       await step("send page does not scroll sideways", () => assertNoSidewaysScroll("/send"));
     }
 
+    await step("the gate offers connect where it asks for it", async () => {
+      // The regression this guards: the empty state used to be text pointing at the sidebar. On a
+      // phone the sidebar is behind a hamburger, so the screen asked for something the user could
+      // only do after guessing where the wallet control lived. `main` excludes both the desktop
+      // rail and the drawer — Radix portals it to the body — so this passes only if the control is
+      // genuinely in the page content.
+      await page
+        .locator("main")
+        .getByRole("button", { name: /connect wallet/i })
+        .first()
+        .waitFor({ timeout: 10000 });
+    });
+
     await step("wallet connects", async () => {
-      // On a phone the wallet control lives in the drawer, so the drawer is the path to it.
-      if (MOBILE) await page.getByRole("button", { name: /open navigation/i }).click();
-      await page.getByRole("button", { name: /connect wallet/i }).last().click();
+      // Deliberately the in-page control, not the sidebar one: connecting has to work without the
+      // drawer for the step above to mean anything.
+      await page
+        .locator("main")
+        .getByRole("button", { name: /connect wallet/i })
+        .first()
+        .click();
       const item = page.getByText("MetaMask", { exact: true });
       if (await item.isVisible().catch(() => false)) await item.click();
-      await page.getByText("0x9f2C...5678").last().waitFor({ timeout: 20000 });
-      if (MOBILE) await page.keyboard.press("Escape");
+      // The gate opening is the assertion, not the address in the wallet control: on a phone that
+      // control is in the closed drawer, and needing to open it to confirm the connect would
+      // reintroduce exactly the step this change removes.
+      await page.getByText("Wallet not connected").waitFor({ state: "hidden", timeout: 20000 });
     });
     await step("send form renders once connected", async () => {
       await page.getByPlaceholder(/meta-address/i).waitFor({ timeout: 15000 });
@@ -428,6 +447,21 @@ async function main() {
       if (await page.getByText(/Connect your wallet to use payroll/i).isVisible().catch(() => false)) {
         throw new Error("the Solana connect prompt is reachable from BOT Chain");
       }
+    });
+
+    await step("a first-time visitor opens on BOT Chain", async () => {
+      // Nothing seeded in storage, so this is what a real first load resolves to. With the flag on,
+      // BOT Chain is the default and Solana is the opt-in — the reverse of how this started. A
+      // separate context because the shared one seeds "botchain" for every page in it.
+      const fresh = await browser.newContext({
+        viewport: VIEWPORT,
+        ...(MOBILE ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3 } : {}),
+      });
+      await fresh.addInitScript(injectWallet, { account: ACCOUNT, deterministic: DETERMINISTIC });
+      const virgin = await fresh.newPage();
+      await virgin.goto(`${APP}/send`, { waitUntil: "networkidle" });
+      await virgin.getByText("Stealth payment", { exact: false }).waitFor({ timeout: 20000 });
+      await fresh.close();
     });
 
     await step("Solana path is untouched", async () => {
