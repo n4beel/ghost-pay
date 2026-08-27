@@ -185,6 +185,14 @@ public, sender public. The differences are stated rather than smoothed over, bec
 review is exactly the audience that checks a privacy claim against the chain, and implying parity
 is a claim two minutes on an explorer disproves.
 
+**Closed: the nav no longer overstates what works.** Left open at the end of P3, when `/dashboard`
+and `/history` were marked as BOT Chain pages but still rendered their Solana views. Both now branch
+on `isBotChain` — `BotChainDashboard`, `BotChainHistory` — so `NAV_LINKS` is true as written:
+`/dashboard`, `/send`, `/receive` and `/history` work on BOT Chain, and `/payroll`, `/compliance`
+and `/rewards` carry the `SOL` chip and show the "Solana only" notice. If a page ever gains or loses
+a BOT Chain branch, that flag has to move with it — the chip is the only thing telling the user
+where a dead end is.
+
 ### Done — first real MetaMask run, and what it found
 
 The full loop worked on Bohr: unlock, publish, resolve a recipient by their plain address, send,
