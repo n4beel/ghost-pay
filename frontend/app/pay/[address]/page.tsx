@@ -16,6 +16,7 @@ import { sendPrivate } from "@/lib/umbra/send";
 import { TOKENS, SUPPORTED_TOKENS } from "@/lib/tokens";
 import { useToast } from "@/components/ui/Toast";
 import ConnectButton from "@/components/ui/ConnectButton";
+import { useChain } from "@/components/providers/ChainProvider";
 
 type SendStage = "idle" | "proving" | "broadcasting" | "done" | "error";
 
@@ -25,6 +26,15 @@ export default function PayPage() {
   const { connected } = useWallet();
   const { client, isReady } = useUmbra();
   const { toast } = useToast();
+  const { isBotChain, hydrated, setActiveChain } = useChain();
+
+  // A payment link is a Solana payment, and this page has no chain switcher. Someone arriving here
+  // with BOT Chain selected from an earlier session would otherwise find their Solana wallet
+  // disconnected on sight, with nothing on the page able to fix it. The route declares the chain it
+  // needs instead.
+  useEffect(() => {
+    if (hydrated && isBotChain) setActiveChain("solana");
+  }, [hydrated, isBotChain, setActiveChain]);
 
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(rawAddress);

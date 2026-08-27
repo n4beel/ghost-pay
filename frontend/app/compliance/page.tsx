@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import PageShell from "@/components/layout/PageShell";
+import { useChain } from "@/components/providers/ChainProvider";
+import SolanaOnlyNotice from "@/components/botchain/SolanaOnlyNotice";
 import Panel from "@/components/ui/Panel";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -32,6 +34,22 @@ function truncate(addr: string) {
 }
 
 export default function CompliancePage() {
+  const { isBotChain } = useChain();
+
+  // Solana-only. Rendering its connect prompt on BOT Chain would invite a second
+  // wallet connection the app deliberately prevents.
+  if (isBotChain) {
+    return (
+      <PageShell title="Compliance" description="Scoped viewing keys for auditors">
+        <SolanaOnlyNotice feature="Compliance keys" />
+      </PageShell>
+    );
+  }
+
+  return <SolanaCompliancePage />;
+}
+
+function SolanaCompliancePage() {
   const { connected, publicKey } = useWallet();
   const { client, isReady } = useUmbra();
   const { toast } = useToast();

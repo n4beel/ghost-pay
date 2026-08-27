@@ -229,6 +229,36 @@ than a wiring mistake.
 which fails on filesystem permissions and mainnet RPC access and buries real failures under
 twenty-one unrelated ones.
 
+### Done — one chain at a time
+
+A wallet app that serves both chains — MetaMask now does — could leave a Solana session live behind
+a BOT Chain screen. Nothing enforced exclusivity, and three things kept the Solana side awake:
+`autoConnect` on the Solana adapter restored a session regardless of the selected chain,
+`UmbraProvider` initialised on any connected Solana wallet (prompting signatures and reading
+registration for a chain the user had left), and the Solana-only pages still offered their connect
+prompt.
+
+`ChainExclusivity` is now the single enforcement point. It sits inside both wallet providers —
+the only place that can see both — and runs on every change rather than only on the switcher's
+click, because an auto-reconnect has to be undone too, not just a deliberate connect.
+
+- Selecting BOT Chain disconnects the Solana wallet; selecting Solana disconnects the EVM wallet.
+- `autoConnect` is off while BOT Chain is selected, so the session is never restored in the first
+  place rather than connected and then torn down.
+- `UmbraProvider` treats BOT Chain exactly like a disconnected wallet: client destroyed, state reset.
+- `StealthProvider` locks on leaving BOT Chain, so no spending key is reachable from a Solana screen.
+- `/payroll`, `/compliance` and `/rewards` show a "Solana only" notice on BOT Chain instead of a
+  second connect prompt.
+
+**`/pay/[address]` is the exception, deliberately.** A payment link is a Solana payment and the page
+has no chain switcher, so a visitor arriving with BOT Chain stored would have found their wallet
+disconnected on sight with nothing able to fix it. That route sets the active chain to Solana on
+mount: the route declares the chain it needs.
+
+`npm run smoke:botchain` asserts both halves — that switching to Solana drops the EVM address from
+the wallet control entirely rather than hiding it, and that a Solana-only page on BOT Chain never
+offers its connect prompt.
+
 ### Next — P6, verify and mainnet cutover
 
 ---

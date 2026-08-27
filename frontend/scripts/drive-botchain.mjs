@@ -399,6 +399,37 @@ async function main() {
       });
     }
 
+    await step("switching chains disconnects the other wallet", async () => {
+      // The rule this asserts: never two identities live at once. Switching to Solana must drop the
+      // EVM connection, not merely hide it — a connected wallet behind a hidden UI is exactly what
+      // let a Solana session survive behind a BOT Chain screen.
+      await page.goto(`${APP}/dashboard`, { waitUntil: "networkidle" });
+      if (MOBILE) await page.getByRole("button", { name: /open navigation/i }).click();
+      await page.getByText("0x9f2C...5678").last().waitFor({ timeout: 20000 });
+
+      await page.getByRole("button", { name: /^solana$/i }).last().click();
+
+      // The EVM address must disappear from the wallet control entirely.
+      await page
+        .getByText("0x9f2C...5678")
+        .last()
+        .waitFor({ state: "hidden", timeout: 20000 });
+
+      // And the BOT Chain dashboard must be gone with it.
+      if (await page.getByText(/incoming stealth payments/i).isVisible().catch(() => false)) {
+        throw new Error("the BOT Chain dashboard survived the switch to Solana");
+      }
+    });
+
+    await step("Solana-only pages do not offer a second wallet on BOT Chain", async () => {
+      await page.evaluate(() => localStorage.setItem("ghost-pay:active-chain", "botchain"));
+      await page.goto(`${APP}/payroll`, { waitUntil: "networkidle" });
+      await page.getByText(/Solana only/i).waitFor({ timeout: 20000 });
+      if (await page.getByText(/Connect your wallet to use payroll/i).isVisible().catch(() => false)) {
+        throw new Error("the Solana connect prompt is reachable from BOT Chain");
+      }
+    });
+
     await step("Solana path is untouched", async () => {
       const other = await ctx.newPage();
       await other.addInitScript(() => localStorage.setItem("ghost-pay:active-chain", "solana"));
